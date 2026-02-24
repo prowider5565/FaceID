@@ -61,6 +61,13 @@ class WebhookAttendanceResponseSchema(BaseModel):
     event_type: EventType
     data: AttendanceEventDataSchema
 
+{
+    "event_type": EventType,
+    "data": { # CameraEnrollmentDataSchema
+        "ip_address": "ip address here",
+        "device_name": "Device name here"
+    }
+}
 
 FACE_ID_EXAMPLE_PAYLOAD = {
     "ipAddress": "192.168.100.55",

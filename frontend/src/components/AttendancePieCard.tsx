@@ -12,7 +12,8 @@ function AttendancePieCard({ statuses }: AttendancePieCardProps) {
   const totalEmployees = statuses.reduce((sum, item) => sum + item.count, 0)
   let cumulative = 0
 
-  const pieGradient = statuses
+  const pieGradient = totalEmployees > 0
+    ? statuses
     .map((item) => {
       const start = (cumulative / totalEmployees) * 100
       cumulative += item.count
@@ -20,6 +21,7 @@ function AttendancePieCard({ statuses }: AttendancePieCardProps) {
       return `${item.color} ${start}% ${end}%`
     })
     .join(', ')
+    : '#e2e8f0 0% 100%'
 
   return (
     <article className="attendance-summary" aria-label="Attendance status chart">
@@ -33,7 +35,7 @@ function AttendancePieCard({ statuses }: AttendancePieCardProps) {
         />
         <ul className="attendance-legend">
           {statuses.map((item) => {
-            const percentage = ((item.count / totalEmployees) * 100).toFixed(1)
+            const percentage = totalEmployees > 0 ? ((item.count / totalEmployees) * 100).toFixed(1) : '0.0'
 
             return (
               <li key={item.status}>

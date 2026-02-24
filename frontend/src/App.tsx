@@ -32,6 +32,23 @@ type SystemMetric = {
   count: number
 }
 
+type NotificationUser = {
+  id: number
+  full_name: string
+  position: string
+  shift: string
+  role: string
+}
+
+type AttendanceNotificationPayload = {
+  event_type: string
+  data: {
+    user: NotificationUser | null
+    attendance_date: string | null
+    direction: string
+  }
+}
+
 type DashboardNotification = {
   id: number
   payload: unknown
@@ -64,19 +81,24 @@ const navigationItems: NavItem[] = [
   { key: 'cameras', label: 'Cameras' },
 ]
 
-const attendanceStatuses: AttendanceStatus[] = [
-  { status: 'Present', count: 148, color: '#22c55e' },
-  { status: 'Absent', count: 24, color: '#ef4444' },
-  { status: 'Late', count: 13, color: '#f59e0b' },
-  { status: 'Day off', count: 35, color: '#3b82f6' },
-]
+const isAttendanceNotificationPayload = (payload: unknown): payload is AttendanceNotificationPayload => {
+  if (!payload || typeof payload !== 'object') return false
+
+  const candidate = payload as Record<string, unknown>
+  const data = candidate.data as Record<string, unknown> | undefined
+  return (
+    typeof candidate.event_type === 'string' &&
+    !!data &&
+    typeof data.direction === 'string' &&
+    ('attendance_date' in data) &&
+    ('user' in data)
+  )
+}
 
 function App() {
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
   const [notifications, setNotifications] = useState<DashboardNotification[]>([])
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false)
-  const now = new Date()
-  const todayDate = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, '0')}-${`${now.getDate()}`.padStart(2, '0')}`
   const wsUrl = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8000/ws/webhook-events'
   const notificationPanelOpenRef = useRef(isNotificationPanelOpen)
 
@@ -148,88 +170,64 @@ function App() {
     })
   }
 
-  const employees: Employee[] = [
-    {
-      id: 100001,
-      fullName: 'Maria Lopez',
-      phoneNumber: '+1-555-0101',
-      hourlyRate: 22.5,
-      role: 'Employee',
-      position: 'Receptionist',
-      shift: 'Day',
-      isActive: true,
-      createdAt: '2025-07-12T10:00:00',
-      updatedAt: '2026-02-24T08:00:00',
-      checkInAt: `${todayDate}T08:43:00`,
-    },
-    {
-      id: 100002,
-      fullName: 'James Carter',
-      phoneNumber: '+1-555-0102',
-      hourlyRate: 28,
-      role: 'Employee',
-      position: 'Security Officer',
-      shift: 'Day',
-      isActive: true,
-      createdAt: '2025-08-01T09:30:00',
-      updatedAt: '2026-02-24T08:10:00',
-      checkInAt: `${todayDate}T09:18:00`,
-    },
-    {
-      id: 100003,
-      fullName: 'Olivia Nguyen',
-      phoneNumber: '+1-555-0103',
-      hourlyRate: 24,
-      role: 'Admin',
-      position: 'HR Specialist',
-      shift: 'Day',
-      isActive: true,
-      createdAt: '2025-05-09T11:20:00',
-      updatedAt: '2026-02-24T08:12:00',
-      checkInAt: `${todayDate}T08:55:00`,
-    },
-    {
-      id: 100004,
-      fullName: 'Noah Patel',
-      phoneNumber: '+1-555-0104',
-      hourlyRate: 26,
-      role: 'Employee',
-      position: 'Warehouse Clerk',
-      shift: 'Night',
-      isActive: true,
-      createdAt: '2025-10-02T13:10:00',
-      updatedAt: '2026-02-24T07:50:00',
-      checkInAt: null,
-    },
-    {
-      id: 100005,
-      fullName: 'Ava Johnson',
-      phoneNumber: '+1-555-0105',
-      hourlyRate: 31.5,
-      role: 'Manager',
-      position: 'Floor Supervisor',
-      shift: 'Day',
-      isActive: true,
-      createdAt: '2025-04-18T12:00:00',
-      updatedAt: '2026-02-24T08:01:00',
-      checkInAt: `${todayDate}T09:07:00`,
-    },
-    {
-      id: 100006,
-      fullName: 'Ethan Wright',
-      phoneNumber: '+1-555-0106',
-      hourlyRate: 27,
-      role: 'Admin',
-      position: 'Maintenance Tech',
-      shift: 'Night',
-      isActive: false,
-      createdAt: '2025-11-11T09:40:00',
-      updatedAt: '2026-02-24T08:08:00',
-      checkInAt: `${todayDate}T20:52:00`,
-    },
-  ]
+  const checkinsToday = useMemo(() => {
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const endOfToday = new Date(startOfToday)
+    endOfToday.setDate(endOfToday.getDate() + 1)
 
-  const activeEmployees = employees.filter((employee) => employee.isActive)
+    const byUser = new Map<number, Employee>()
+
+    for (const notification of notifications) {
+      if (!isAttendanceNotificationPayload(notification.payload)) continue
+      if (notification.payload.event_type !== 'Attendance') continue
+      if (notification.payload.data.direction !== 'CheckIn') continue
+      if (!notification.payload.data.user) continue
+
+      const attendanceDate = notification.payload.data.attendance_date
+      if (!attendanceDate) continue
+      const attendance = new Date(attendanceDate)
+      if (Number.isNaN(attendance.getTime())) continue
+      if (attendance < startOfToday || attendance >= endOfToday) continue
+
+      const user = notification.payload.data.user
+      const normalizedShift: Shift = user.shift === 'Night' ? 'Night' : 'Day'
+      const mapped: Employee = {
+        id: user.id,
+        fullName: user.full_name,
+        phoneNumber: '',
+        hourlyRate: 0,
+        role:
+          user.role === 'Manager' || user.role === 'Admin' || user.role === 'Employee'
+            ? user.role
+            : 'Employee',
+        position: user.position,
+        shift: normalizedShift,
+        isActive: true,
+        createdAt: '',
+        updatedAt: '',
+        checkInAt: attendanceDate,
+      }
+
+      const existing = byUser.get(user.id)
+      if (!existing) {
+        byUser.set(user.id, mapped)
+        continue
+      }
+
+      const existingTime = existing.checkInAt ? new Date(existing.checkInAt).getTime() : 0
+      if (attendance.getTime() > existingTime) {
+        byUser.set(user.id, mapped)
+      }
+    }
+
+    return Array.from(byUser.values()).sort((a, b) => {
+      const aTime = a.checkInAt ? new Date(a.checkInAt).getTime() : 0
+      const bTime = b.checkInAt ? new Date(b.checkInAt).getTime() : 0
+      return bTime - aTime
+    })
+  }, [notifications])
+
   const cameras: Camera[] = [
     {
       id: 3001,
@@ -282,10 +280,17 @@ function App() {
   ]
 
   const systemMetrics: SystemMetric[] = [
-    { label: 'Cameras', count: cameras.length },
-    { label: 'Employees', count: activeEmployees.length },
-    { label: 'Admins', count: 2 },
-    { label: 'Managers', count: 1 },
+    { label: 'Cameras', count: 0 },
+    { label: 'Employees', count: checkinsToday.filter((employee) => employee.role === 'Employee').length },
+    { label: 'Admins', count: checkinsToday.filter((employee) => employee.role === 'Admin').length },
+    { label: 'Managers', count: checkinsToday.filter((employee) => employee.role === 'Manager').length },
+  ]
+
+  const attendanceStatuses: AttendanceStatus[] = [
+    { status: 'Present', count: checkinsToday.length, color: '#22c55e' },
+    { status: 'Absent', count: 0, color: '#ef4444' },
+    { status: 'Late', count: 0, color: '#f59e0b' },
+    { status: 'Day off', count: 0, color: '#3b82f6' },
   ]
 
   return (
@@ -325,7 +330,7 @@ function App() {
       <main className="content">
         {activePage === 'dashboard' ? (
           <Dashboard
-            employees={activeEmployees}
+            employees={checkinsToday}
             metrics={systemMetrics}
             attendanceStatuses={attendanceStatuses}
             notifications={notifications}

@@ -70,6 +70,10 @@ def _resolve_user_from_payload(payload: dict) -> User | None:
     finally:
         db.close()
 
+def check_camera(ip_addr: str):
+    db = SessionLocal()
+    
+
 
 @app.post("/webhook")
 async def webhook(request: Request):
@@ -80,6 +84,9 @@ async def webhook(request: Request):
         return {"ok": False, "detail": "Could not parse webhook JSON payload"}
 
     payload_dict = payload if isinstance(payload, dict) else {}
+    camera_ip = payload_dict.get("ipAddress", None)
+    if camera_ip is not None:
+
     user = _resolve_user_from_payload(payload_dict)
     response_payload = WebhookAttendanceResponseSchema(
         event_type=EventType.ATTENDANCE,
