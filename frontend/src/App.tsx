@@ -251,7 +251,7 @@ function App() {
             attendanceStatuses={attendanceStatuses}
           />
         ) : activePage === 'employees' ? (
-          <Employees employees={employees} />
+          <Employees />
         ) : (
           <Cameras cameras={cameras} />
         )}

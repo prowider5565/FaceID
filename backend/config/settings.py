@@ -1,5 +1,5 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -32,10 +32,25 @@ def _get_str(name: str, default: str):
         return default
 
 
+def _get_list(name: str, default: list[str] | None = None) -> list[str]:
+    raw = os.getenv(name)
+    fallback = [] if default is None else default
+    if raw is None:
+        return fallback
+    try:
+        return [item.strip() for item in raw.split(",") if item.strip()]
+    except ValueError:
+        return fallback
+
+
 @dataclass(frozen=True)
 class Settings:
     database_url: str = _get_str("DATABASE_URL", "sqlite:///./faceid.db")
     environment: str = _get_str("environment", "development")
+    cors_allowed_origins: list[str] = field(
+        default_factory=lambda: _get_list("CORS_ALLOWED_ORIGINS")
+    )
+
     sql_echo: bool = _get_bool("SQL_ECHO", False)
     sql_pool_size: int = _get_int("SQL_POOL_SIZE", 10)
     sql_max_overflow: int = _get_int("SQL_MAX_OVERFLOW", 20)

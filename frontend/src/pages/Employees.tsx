@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import Button from '../components/Button'
 import SearchBar from '../components/SearchBar'
 
@@ -16,10 +16,6 @@ type Employee = {
   isActive: boolean
   createdAt: string
   updatedAt: string
-}
-
-type EmployeesProps = {
-  employees: Employee[]
 }
 
 type EmployeeTab = 'managers' | 'admins' | 'employees'
@@ -56,6 +52,14 @@ type ApiEmployee = {
   updated_at: string
 }
 
+type ApiPage<T> = {
+  items: T[]
+  total: number
+  page: number
+  size: number
+  pages: number
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 
 const normalizeRole = (role: string): EmployeeRole => {
@@ -79,24 +83,22 @@ const mapApiEmployee = (apiEmployee: ApiEmployee): Employee => ({
   updatedAt: apiEmployee.updated_at,
 })
 
-const parseEmployeesResponse = (data: unknown): Employee[] => {
-  if (Array.isArray(data)) {
-    return data.map((employee) => mapApiEmployee(employee as ApiEmployee))
-  }
-
-  if (data && typeof data === 'object' && 'items' in data && Array.isArray((data as { items: unknown[] }).items)) {
-    return (data as { items: ApiEmployee[] }).items.map(mapApiEmployee)
-  }
-
-  return []
+const tabToRole: Record<EmployeeTab, EmployeeRole> = {
+  employees: 'Employee',
+  managers: 'Manager',
+  admins: 'Admin',
 }
 
-function Employees({ employees }: EmployeesProps) {
+function Employees() {
   const [activeTab, setActiveTab] = useState<EmployeeTab>('employees')
   const [currentPage, setCurrentPage] = useState(1)
-  const [employeeRows, setEmployeeRows] = useState<Employee[]>(employees)
+  const [employeeRows, setEmployeeRows] = useState<Employee[]>([])
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState('')
   const [employeePendingDisable, setEmployeePendingDisable] = useState<Employee | null>(null)
   const [employeeEditing, setEmployeeEditing] = useState<Employee | null>(null)
   const [editError, setEditError] = useState('')
@@ -120,13 +122,27 @@ function Employees({ employees }: EmployeesProps) {
   }, [search])
 
   useEffect(() => {
+    setCurrentPage(1)
+  }, [activeTab, debouncedSearch])
+
+  useEffect(() => {
     const controller = new AbortController()
 
     const loadEmployees = async () => {
+      setIsLoading(true)
+      setLoadError('')
+
       try {
-        const params = new URLSearchParams({ search: debouncedSearch })
-        const query = params.toString()
-        const response = await fetch(`${API_BASE_URL}/employees?${query}`, {
+        const params = new URLSearchParams({
+          page: String(currentPage),
+          size: String(pageSize),
+          role: tabToRole[activeTab],
+        })
+        if (debouncedSearch) {
+          params.set('search', debouncedSearch)
+        }
+
+        const response = await fetch(`${API_BASE_URL}/users/all?${params.toString()}`, {
           signal: controller.signal,
         })
 
@@ -134,43 +150,31 @@ function Employees({ employees }: EmployeesProps) {
           throw new Error('Failed to load employees')
         }
 
-        const data = await response.json()
-        setEmployeeRows(parseEmployeesResponse(data))
+        const data = (await response.json()) as ApiPage<ApiEmployee>
+        const mappedRows = Array.isArray(data.items) ? data.items.map(mapApiEmployee) : []
+
+        setEmployeeRows(mappedRows)
+        setTotalItems(typeof data.total === 'number' ? data.total : mappedRows.length)
+        setTotalPages(Math.max(1, typeof data.pages === 'number' ? data.pages : 1))
       } catch {
         if (controller.signal.aborted) return
-
-        const fallback = employees.filter((employee) => {
-          if (!debouncedSearch) return true
-          const q = debouncedSearch.toLowerCase()
-          return (
-            employee.fullName.toLowerCase().includes(q) ||
-            employee.phoneNumber.toLowerCase().includes(q) ||
-            employee.position.toLowerCase().includes(q) ||
-            employee.role.toLowerCase().includes(q)
-          )
-        })
-        setEmployeeRows(fallback)
+        setEmployeeRows([])
+        setTotalItems(0)
+        setTotalPages(1)
+        setLoadError('Failed to load users from API.')
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false)
+        }
       }
     }
 
     loadEmployees()
 
     return () => controller.abort()
-  }, [debouncedSearch, employees])
+  }, [activeTab, currentPage, debouncedSearch])
 
-  const filteredEmployees = useMemo(() => {
-    if (activeTab === 'managers') return employeeRows.filter((employee) => employee.role === 'Manager')
-    if (activeTab === 'admins') return employeeRows.filter((employee) => employee.role === 'Admin')
-    return employeeRows.filter((employee) => employee.role === 'Employee')
-  }, [activeTab, employeeRows])
-
-  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / pageSize))
-  const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1)
-
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [activeTab, debouncedSearch])
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -245,8 +249,8 @@ function Employees({ employees }: EmployeesProps) {
     setEmployeePendingDisable(null)
   }
 
-  const rangeStart = filteredEmployees.length === 0 ? 0 : (currentPage - 1) * pageSize + 1
-  const rangeEnd = Math.min(currentPage * pageSize, filteredEmployees.length)
+  const rangeStart = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1
+  const rangeEnd = Math.min(currentPage * pageSize, totalItems)
 
   return (
     <section className="employees-page">
@@ -300,7 +304,7 @@ function Employees({ employees }: EmployeesProps) {
               </tr>
             </thead>
             <tbody>
-              {paginatedEmployees.map((employee) => (
+              {employeeRows.map((employee) => (
                 <tr key={employee.id}>
                   <td>{employee.id}</td>
                   <td>{employee.fullName}</td>
@@ -342,10 +346,12 @@ function Employees({ employees }: EmployeesProps) {
             </tbody>
           </table>
         </div>
+        {isLoading ? <p className="employees-pagination-copy">Loading...</p> : null}
+        {loadError ? <p className="employees-pagination-copy">{loadError}</p> : null}
 
         <footer className="employees-pagination">
           <p className="employees-pagination-copy">
-            Showing {rangeStart}-{rangeEnd} of {filteredEmployees.length}
+            Showing {rangeStart}-{rangeEnd} of {totalItems}
           </p>
           <div className="employees-pagination-controls">
             <button
