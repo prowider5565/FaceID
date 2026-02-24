@@ -462,6 +462,176 @@ h1 {
   background: #fee2e2;
 }
 
+.employee-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
+}
+
+.employee-action-btn {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.38rem;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.74rem;
+  font-weight: 620;
+  padding: 0.28rem 0.52rem;
+  cursor: pointer;
+}
+
+.employee-action-btn-edit:hover {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.employee-action-btn-disable {
+  border-color: #fecaca;
+  color: #b91c1c;
+  background: #fff7f7;
+}
+
+.employee-action-btn-disable:hover:not(:disabled) {
+  border-color: #fca5a5;
+}
+
+.employee-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.36);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 50;
+}
+
+.modal-card {
+  width: min(540px, 100%);
+  border-radius: 0.55rem;
+  border: 1px solid #dbe5f1;
+  background: #ffffff;
+  padding: 1rem;
+  box-shadow: 0 24px 44px rgba(15, 23, 42, 0.2);
+}
+
+.modal-card h2 {
+  margin: 0;
+  font-size: 1.02rem;
+  color: #0f172a;
+}
+
+.modal-card p {
+  margin: 0.55rem 0 0;
+  color: #475569;
+  font-size: 0.87rem;
+}
+
+.modal-card-alert {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.employee-edit-form {
+  margin-top: 0.8rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem 0.8rem;
+}
+
+.employee-edit-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.employee-edit-form input,
+.employee-edit-form select {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.42rem;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 0.5rem 0.58rem;
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.employee-edit-form input:focus,
+.employee-edit-form select:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.24);
+}
+
+.employee-checkbox-row {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.employee-checkbox-row input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}
+
+.employee-form-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.78rem;
+  color: #b91c1c;
+  font-weight: 620;
+}
+
+.modal-actions {
+  grid-column: 1 / -1;
+  margin-top: 0.1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.48rem;
+}
+
+.modal-btn {
+  border-radius: 0.4rem;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 620;
+  padding: 0.42rem 0.72rem;
+  cursor: pointer;
+}
+
+.modal-btn-cancel:hover {
+  border-color: #94a3b8;
+}
+
+.modal-btn-danger {
+  border-color: #fecaca;
+  color: #b91c1c;
+  background: #fff1f2;
+}
+
+.modal-btn-danger:hover {
+  border-color: #fca5a5;
+}
+
+.modal-btn-submit {
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.modal-btn-submit:hover {
+  border-color: #93c5fd;
+}
+
 .cameras-page {
   display: flex;
   flex-direction: column;
@@ -692,6 +862,10 @@ h1 {
   }
 
   .camera-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-edit-form {
     grid-template-columns: 1fr;
   }
 }
