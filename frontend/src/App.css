@@ -352,6 +352,116 @@ h1 {
   color: #0f172a;
 }
 
+.employees-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.employees-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.employees-header h1 {
+  margin: 0;
+}
+
+.employees-header p {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.employees-table-card {
+  border: 1px solid #dbe5f1;
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.95);
+  overflow: hidden;
+}
+
+.employees-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.7rem 0.8rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.employees-tab {
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: #475569;
+  font-size: 0.83rem;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+}
+
+.employees-tab:hover {
+  background: #eef2ff;
+}
+
+.employees-tab-active {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.employees-table-wrap {
+  overflow-x: auto;
+}
+
+.employees-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  color: #1e293b;
+}
+
+.employees-table th {
+  text-align: left;
+  font-size: 0.73rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 700;
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.employees-table td {
+  padding: 0.85rem 0.9rem;
+  border-bottom: 1px solid #eef2f7;
+  white-space: nowrap;
+}
+
+.employees-table tbody tr:hover {
+  background: #f8fbff;
+}
+
+.employee-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.17rem 0.5rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.employee-status-active {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.employee-status-inactive {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
 @media (max-width: 1120px) {
   .insights-row {
     grid-template-columns: 1fr;
@@ -393,5 +503,13 @@ h1 {
   .topbar {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .employees-header {
+    flex-direction: column;
+  }
+
+  .employees-tabs {
+    overflow-x: auto;
   }
 }

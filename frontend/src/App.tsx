@@ -1,18 +1,7 @@
+import { useState } from 'react'
 import './App.css'
-import AttendancePieCard from './components/AttendancePieCard'
-import CheckinTodayCard from './components/CheckinTodayCard'
-import CountCards from './components/CountCards'
-
-type NavItem = {
-  label: string
-  active?: boolean
-}
-
-type AttendanceStatus = {
-  status: 'Present' | 'Absent' | 'Late' | 'Day off'
-  count: number
-  color: string
-}
+import Dashboard from './pages/Dashboard'
+import Employees from './pages/Employees'
 
 type Shift = 'Day' | 'Night'
 
@@ -29,21 +18,27 @@ type Employee = {
   checkInAt: string | null
 }
 
+type AttendanceStatus = {
+  status: 'Present' | 'Absent' | 'Late' | 'Day off'
+  count: number
+  color: string
+}
+
 type SystemMetric = {
   label: 'Cameras' | 'Employees' | 'Admins' | 'Managers'
   count: number
 }
 
+type PageKey = 'dashboard' | 'employees'
+
+type NavItem = {
+  key: PageKey
+  label: string
+}
+
 const navigationItems: NavItem[] = [
-  { label: 'Overview', active: true },
-  { label: 'Live Capture' },
-  { label: 'Employees' },
-  { label: 'Attendance Logs' },
-  { label: 'Shift Planner' },
-  { label: 'Reports' },
-  { label: 'Device Health' },
-  { label: 'Access Rules' },
-  { label: 'Settings' },
+  { key: 'dashboard', label: 'Overview' },
+  { key: 'employees', label: 'Employees' },
 ]
 
 const attendanceStatuses: AttendanceStatus[] = [
@@ -54,6 +49,7 @@ const attendanceStatuses: AttendanceStatus[] = [
 ]
 
 function App() {
+  const [activePage, setActivePage] = useState<PageKey>('dashboard')
   const now = new Date()
   const todayDate = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, '0')}-${`${now.getDate()}`.padStart(2, '0')}`
 
@@ -125,7 +121,7 @@ function App() {
       hourlyRate: 27,
       position: 'Maintenance Tech',
       shift: 'Night',
-      isActive: true,
+      isActive: false,
       createdAt: '2025-11-11T09:40:00',
       updatedAt: '2026-02-24T08:08:00',
       checkInAt: `${todayDate}T20:52:00`,
@@ -133,6 +129,7 @@ function App() {
   ]
 
   const activeEmployees = employees.filter((employee) => employee.isActive)
+
   const systemMetrics: SystemMetric[] = [
     { label: 'Cameras', count: 14 },
     { label: 'Employees', count: activeEmployees.length },
@@ -156,9 +153,10 @@ function App() {
         <nav className="nav-list" aria-label="Main navigation">
           {navigationItems.map((item) => (
             <button
-              key={item.label}
+              key={item.key}
               type="button"
-              className={`nav-item${item.active ? ' nav-item-active' : ''}`}
+              className={`nav-item${activePage === item.key ? ' nav-item-active' : ''}`}
+              onClick={() => setActivePage(item.key)}
             >
               {item.label}
             </button>
@@ -174,26 +172,15 @@ function App() {
       </aside>
 
       <main className="content">
-        <header className="topbar">
-          <h1>Dashboard</h1>
-          <div className="topbar-actions">
-            <button type="button" className="secondary-btn">
-              Export Snapshot
-            </button>
-            <button type="button" className="primary-btn">
-              Register Face Profile
-            </button>
-          </div>
-        </header>
-
-        <section className="insights-row" aria-label="Today attendance insights">
-          <CheckinTodayCard employees={activeEmployees} />
-
-          <div className="insights-side">
-            <CountCards metrics={systemMetrics} />
-            <AttendancePieCard statuses={attendanceStatuses} />
-          </div>
-        </section>
+        {activePage === 'dashboard' ? (
+          <Dashboard
+            employees={activeEmployees}
+            metrics={systemMetrics}
+            attendanceStatuses={attendanceStatuses}
+          />
+        ) : (
+          <Employees employees={employees} />
+        )}
       </main>
     </div>
   )
