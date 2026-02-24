@@ -1,8 +1,27 @@
+from contextlib import asynccontextmanager
+from pathlib import Path
 from fastapi import FastAPI, Request
+from config.settings import settings
 import json
 import re
+import subprocess
+import sys
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if settings.environment.lower() == "development":
+        backend_dir = Path(__file__).resolve().parent
+        subprocess.run(
+            [sys.executable, "-m", "alembic", "upgrade", "head"],
+            cwd=backend_dir,
+            check=True,
+        )
+
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.post("/webhook")
@@ -39,34 +58,3 @@ async def webhook(request: Request):
                 print(body)
 
     return {"ok": True}
-
-
-{
-    "ipAddress": "192.168.100.55",
-    "portNo": 8000,
-    "protocol": "HTTP",
-    "macAddress": "e0:ca:3c:fc:a7:ce",
-    "channelID": 1,
-    "dateTime": "2026-02-23T19:34:21+08:00",
-    "activePostCount": 1,
-    "eventType": "AccessControllerEvent",
-    "eventState": "active",
-    "eventDescription": "Access Controller Event",
-    "deviceID": "Default",
-    "AccessControllerEvent": {
-        "deviceName": "Access Controller",
-        "majorEventType": 5,
-        "subEventType": 21,
-        "cardReaderKind": 1,
-        "doorNo": 1,
-        "serialNo": 1187,
-        "currentVerifyMode": "invalid",
-        "frontSerialNo": 1186,
-        "attendanceStatus": "undefined",
-        "label": "",
-        "statusValue": 0,
-        "mask": "unknown",
-        "helmet": "unknown",
-        "purePwdVerifyEnable": True,
-    },
-}
