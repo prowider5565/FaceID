@@ -109,9 +109,58 @@
 
 .topbar {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 1rem;
+}
+
+.dashboard-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dashboard-utility-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.dashboard-utility-nav h1 {
+  margin: 0;
+}
+
+.dashboard-utility-actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.utility-icon-btn {
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 1px solid #dbe5f1;
+  border-radius: 0.45rem;
+  background: #ffffff;
+  color: #334155;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.utility-icon-btn:hover {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.utility-icon-btn svg {
+  width: 1rem;
+  height: 1rem;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .topbar-label {
@@ -642,6 +691,13 @@ h1 {
   margin: 0;
 }
 
+.cameras-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .cameras-header p {
   margin: 0.35rem 0 0;
   color: #64748b;
@@ -756,6 +812,38 @@ h1 {
   border-color: #fca5a5;
 }
 
+.camera-create-form {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.camera-create-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.camera-create-form input,
+.camera-create-form select {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.42rem;
+  background: #ffffff;
+  color: #0f172a;
+  padding: 0.5rem 0.58rem;
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.camera-create-form input:focus,
+.camera-create-form select:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.24);
+}
+
 .employees-pagination {
   display: flex;
   align-items: center;
@@ -848,6 +936,14 @@ h1 {
     align-items: flex-start;
   }
 
+  .dashboard-utility-nav {
+    width: 100%;
+  }
+
+  .dashboard-utility-actions {
+    margin-left: auto;
+  }
+
   .employees-toolbar {
     flex-direction: column;
   }
@@ -863,6 +959,11 @@ h1 {
 
   .camera-meta-grid {
     grid-template-columns: 1fr;
+  }
+
+  .cameras-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .employee-edit-form {
