@@ -60,6 +60,16 @@ type ApiPage<T> = {
   pages: number
 }
 
+type UserMutationPayload = {
+  full_name: string
+  phone_number: string
+  hourly_rate: number
+  position: string
+  shift: 'Day' | 'Night'
+  role: 'Manager' | 'Admin' | 'Employee'
+  is_active: boolean
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
 
 const normalizeRole = (role: string): EmployeeRole => {
@@ -99,6 +109,18 @@ function Employees() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [createError, setCreateError] = useState('')
+  const [newEmployeeForm, setNewEmployeeForm] = useState<EditEmployeeForm>({
+    fullName: '',
+    phoneNumber: '',
+    hourlyRate: 0,
+    role: 'Employee',
+    position: '',
+    shift: 'Day',
+    isActive: true,
+  })
   const [employeePendingDisable, setEmployeePendingDisable] = useState<Employee | null>(null)
   const [employeeEditing, setEmployeeEditing] = useState<Employee | null>(null)
   const [editError, setEditError] = useState('')
@@ -172,7 +194,7 @@ function Employees() {
     loadEmployees()
 
     return () => controller.abort()
-  }, [activeTab, currentPage, debouncedSearch])
+  }, [activeTab, currentPage, debouncedSearch, reloadKey])
 
   const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1)
 
@@ -199,7 +221,61 @@ function Employees() {
   const isPhoneValid = (phoneNumber: string) =>
     uzbekistanPhoneRegex.test(phoneNumber.trim()) || russianPhoneRegex.test(phoneNumber.trim())
 
-  const handleEditEmployee = (event: FormEvent<HTMLFormElement>) => {
+  const toUserMutationPayload = (form: EditEmployeeForm): UserMutationPayload => ({
+    full_name: form.fullName.trim(),
+    phone_number: form.phoneNumber.trim(),
+    hourly_rate: form.hourlyRate,
+    position: form.position.trim(),
+    shift: form.shift,
+    role: form.role,
+    is_active: form.isActive,
+  })
+
+  const handleCreateEmployee = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (!newEmployeeForm.fullName.trim() || !newEmployeeForm.position.trim()) {
+      setCreateError('Full name and position are required.')
+      return
+    }
+
+    if (!isPhoneValid(newEmployeeForm.phoneNumber)) {
+      setCreateError('Phone must match Uzbekistan (+998...) or Russian (+7 / 8...) formats.')
+      return
+    }
+
+    if (newEmployeeForm.hourlyRate <= 0) {
+      setCreateError('Hourly rate must be greater than 0.')
+      return
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(toUserMutationPayload(newEmployeeForm)),
+      })
+      if (!response.ok) {
+        throw new Error('Failed to create employee')
+      }
+      setIsCreateModalOpen(false)
+      setCreateError('')
+      setNewEmployeeForm({
+        fullName: '',
+        phoneNumber: '',
+        hourlyRate: 0,
+        role: 'Employee',
+        position: '',
+        shift: 'Day',
+        isActive: true,
+      })
+      setReloadKey((value) => value + 1)
+    } catch {
+      setCreateError('Failed to create employee.')
+    }
+  }
+
+  const handleEditEmployee = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     if (!editForm.fullName.trim() || !editForm.position.trim()) {
@@ -219,34 +295,37 @@ function Employees() {
 
     if (!employeeEditing) return
 
-    setEmployeeRows((existingRows) =>
-      existingRows.map((employee) =>
-        employee.id === employeeEditing.id
-          ? {
-              ...employee,
-              fullName: editForm.fullName.trim(),
-              phoneNumber: editForm.phoneNumber.trim(),
-              hourlyRate: editForm.hourlyRate,
-              role: editForm.role,
-              position: editForm.position.trim(),
-              shift: editForm.shift,
-              isActive: editForm.isActive,
-            }
-          : employee,
-      ),
-    )
-
-    setEmployeeEditing(null)
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/${employeeEditing.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(toUserMutationPayload(editForm)),
+      })
+      if (!response.ok) {
+        throw new Error('Failed to update employee')
+      }
+      setEmployeeEditing(null)
+      setReloadKey((value) => value + 1)
+    } catch {
+      setEditError('Failed to update employee.')
+    }
   }
 
-  const handleConfirmDisable = () => {
+  const handleConfirmDisable = async () => {
     if (!employeePendingDisable) return
-    setEmployeeRows((existingRows) =>
-      existingRows.map((employee) =>
-        employee.id === employeePendingDisable.id ? { ...employee, isActive: false } : employee,
-      ),
-    )
-    setEmployeePendingDisable(null)
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/${employeePendingDisable.id}/disable`, {
+        method: 'PATCH',
+      })
+      if (!response.ok) {
+        throw new Error('Failed to disable employee')
+      }
+      setEmployeePendingDisable(null)
+      setReloadKey((value) => value + 1)
+    } catch {
+      setEmployeePendingDisable(null)
+      setLoadError('Failed to disable employee.')
+    }
   }
 
   const rangeStart = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1
@@ -259,7 +338,7 @@ function Employees() {
           <h1>Employees</h1>
           <p>Manage employee records, shifts, and roster activity.</p>
         </div>
-        <Button type="button" variant="primary">
+        <Button type="button" variant="primary" onClick={() => setIsCreateModalOpen(true)}>
           Add New Employee
         </Button>
       </div>
@@ -383,6 +462,110 @@ function Employees() {
           </div>
         </footer>
       </div>
+
+      {isCreateModalOpen ? (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Add employee">
+          <div className="modal-card">
+            <h2>Add New Employee</h2>
+            <form className="employee-edit-form" onSubmit={handleCreateEmployee}>
+              <label>
+                Full Name
+                <input
+                  type="text"
+                  value={newEmployeeForm.fullName}
+                  onChange={(event) =>
+                    setNewEmployeeForm((form) => ({ ...form, fullName: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Phone Number
+                <input
+                  type="text"
+                  value={newEmployeeForm.phoneNumber}
+                  onChange={(event) =>
+                    setNewEmployeeForm((form) => ({ ...form, phoneNumber: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Hourly Rate
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newEmployeeForm.hourlyRate}
+                  onChange={(event) =>
+                    setNewEmployeeForm((form) => ({ ...form, hourlyRate: Number(event.target.value) || 0 }))
+                  }
+                />
+              </label>
+              <label>
+                Role
+                <select
+                  value={newEmployeeForm.role}
+                  onChange={(event) =>
+                    setNewEmployeeForm((form) => ({ ...form, role: event.target.value as EmployeeRole }))
+                  }
+                >
+                  <option value="Employee">Employee</option>
+                  <option value="Manager">Manager</option>
+                  <option value="Admin">Admin</option>
+                </select>
+              </label>
+              <label>
+                Position
+                <input
+                  type="text"
+                  value={newEmployeeForm.position}
+                  onChange={(event) =>
+                    setNewEmployeeForm((form) => ({ ...form, position: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Shift
+                <select
+                  value={newEmployeeForm.shift}
+                  onChange={(event) =>
+                    setNewEmployeeForm((form) => ({ ...form, shift: event.target.value as Shift }))
+                  }
+                >
+                  <option value="Day">Day</option>
+                  <option value="Night">Night</option>
+                </select>
+              </label>
+              <label className="employee-checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={newEmployeeForm.isActive}
+                  onChange={(event) =>
+                    setNewEmployeeForm((form) => ({ ...form, isActive: event.target.checked }))
+                  }
+                />
+                Active
+              </label>
+              {createError ? <p className="employee-form-error">{createError}</p> : null}
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="modal-btn modal-btn-cancel"
+                  onClick={() => {
+                    setIsCreateModalOpen(false)
+                    setCreateError('')
+                  }}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="modal-btn modal-btn-submit">
+                  Create Employee
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       {employeePendingDisable ? (
         <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Disable employee">
