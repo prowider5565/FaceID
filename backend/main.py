@@ -24,8 +24,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-add_pagination(app)
 app.include_router(users_router)
+add_pagination(app)
 
 
 @app.post("/webhook")
