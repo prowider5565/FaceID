@@ -26,6 +26,11 @@ type Employee = {
   checkInAt: string | null
 }
 
+type SystemMetric = {
+  label: 'Cameras' | 'Employees' | 'Admins' | 'Managers'
+  count: number
+}
+
 const navigationItems: NavItem[] = [
   { label: 'Overview', active: true },
   { label: 'Live Capture' },
@@ -125,6 +130,12 @@ function App() {
   ]
 
   const activeEmployees = employees.filter((employee) => employee.isActive)
+  const systemMetrics: SystemMetric[] = [
+    { label: 'Cameras', count: 14 },
+    { label: 'Employees', count: activeEmployees.length },
+    { label: 'Admins', count: 2 },
+    { label: 'Managers', count: 1 },
+  ]
 
   const totalEmployees = attendanceStatuses.reduce((sum, item) => sum + item.count, 0)
   let cumulative = 0
@@ -210,34 +221,47 @@ function App() {
             </div>
           </article>
 
-          <article className="attendance-summary" aria-label="Attendance status chart">
-            <h2>Employees Attendance</h2>
-            <div className="attendance-chart-row">
-              <div
-                className="attendance-pie"
-                style={{ background: `conic-gradient(${pieGradient})` }}
-                role="img"
-                aria-label="Employees attendance status distribution pie chart"
-              />
-              <ul className="attendance-legend">
-                {attendanceStatuses.map((item) => {
-                  const percentage = ((item.count / totalEmployees) * 100).toFixed(1)
-
-                  return (
-                    <li key={item.status}>
-                      <span className="legend-label">
-                        <span className="legend-dot" style={{ backgroundColor: item.color }} />
-                        {item.status}
-                      </span>
-                      <span className="legend-value">
-                        {item.count} ({percentage}%)
-                      </span>
-                    </li>
-                  )
-                })}
+          <div className="insights-side">
+            <article className="metric-summary" aria-label="System counts">
+              <ul className="metric-grid">
+                {systemMetrics.map((item) => (
+                  <li key={item.label}>
+                    <span>{item.label}</span>
+                    <strong>{item.count}</strong>
+                  </li>
+                ))}
               </ul>
-            </div>
-          </article>
+            </article>
+
+            <article className="attendance-summary" aria-label="Attendance status chart">
+              <h2>Employees Attendance</h2>
+              <div className="attendance-chart-row">
+                <div
+                  className="attendance-pie"
+                  style={{ background: `conic-gradient(${pieGradient})` }}
+                  role="img"
+                  aria-label="Employees attendance status distribution pie chart"
+                />
+                <ul className="attendance-legend">
+                  {attendanceStatuses.map((item) => {
+                    const percentage = ((item.count / totalEmployees) * 100).toFixed(1)
+
+                    return (
+                      <li key={item.status}>
+                        <span className="legend-label">
+                          <span className="legend-dot" style={{ backgroundColor: item.color }} />
+                          {item.status}
+                        </span>
+                        <span className="legend-value">
+                          {item.count} ({percentage}%)
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            </article>
+          </div>
         </section>
       </main>
     </div>

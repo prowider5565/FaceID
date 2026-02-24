@@ -159,7 +159,7 @@ h1 {
 
 .insights-row {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(420px, 520px);
+  grid-template-columns: minmax(336px, 432px) minmax(420px, 520px);
   align-items: start;
   justify-content: space-between;
   gap: 1rem;
@@ -170,7 +170,7 @@ h1 {
   border: 1px solid #dbe5f1;
   background: rgba(255, 255, 255, 0.93);
   padding: 1.1rem;
-  max-height: 540px;
+  height: 540px;
   overflow-y: auto;
 }
 
@@ -220,11 +220,54 @@ h1 {
   text-align: right;
 }
 
+.insights-side {
+  height: 540px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.metric-summary {
+  border-radius: 0.55rem;
+  border: 1px solid #dbe5f1;
+  background: rgba(255, 255, 255, 0.93);
+  padding: 0.85rem;
+}
+
+.metric-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.metric-grid li {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.45rem;
+  background: #ffffff;
+  padding: 0.62rem 0.68rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #334155;
+  font-size: 0.82rem;
+}
+
+.metric-grid strong {
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
 .attendance-summary {
+  flex: 1;
   border-radius: 0.55rem;
   border: 1px solid #dbe5f1;
   background: rgba(255, 255, 255, 0.93);
   padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .attendance-summary h2 {
@@ -237,6 +280,7 @@ h1 {
 .attendance-chart-row {
   margin-top: 0.9rem;
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: space-between;
   gap: 1.1rem;
@@ -289,6 +333,11 @@ h1 {
 @media (max-width: 1120px) {
   .insights-row {
     grid-template-columns: 1fr;
+  }
+
+  .checkin-summary,
+  .insights-side {
+    height: auto;
   }
 
   .attendance-chart-row {
