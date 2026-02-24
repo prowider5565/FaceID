@@ -5,16 +5,10 @@ type NavItem = {
   active?: boolean
 }
 
-type StatCard = {
-  label: string
-  value: string
-  delta: string
-}
-
-type ModuleCard = {
-  title: string
-  description: string
-  status: string
+type AttendanceStatus = {
+  status: 'Present' | 'Absent' | 'Late' | 'Day off'
+  count: number
+  color: string
 }
 
 const navigationItems: NavItem[] = [
@@ -29,37 +23,26 @@ const navigationItems: NavItem[] = [
   { label: 'Settings' },
 ]
 
-const statCards: StatCard[] = [
-  { label: 'Employees On-Site', value: '148', delta: '+9 vs yesterday' },
-  { label: 'Late Arrivals', value: '12', delta: '-3 vs yesterday' },
-  { label: 'Face Match Accuracy', value: '99.2%', delta: '+0.4% this week' },
-  { label: 'Unresolved Flags', value: '4', delta: 'Needs review' },
-]
-
-const moduleCards: ModuleCard[] = [
-  {
-    title: 'Real-Time Verification Queue',
-    description: 'Pending face verification events from active checkpoints.',
-    status: 'No active queue',
-  },
-  {
-    title: 'Attendance Exceptions',
-    description: 'Late check-ins, duplicate punches, and unmatched identities.',
-    status: 'Empty',
-  },
-  {
-    title: 'Camera Fleet Status',
-    description: 'Health and uptime of enrollment and gate cameras.',
-    status: 'All systems stable',
-  },
-  {
-    title: 'Payroll Sync Monitor',
-    description: 'Scheduled attendance exports and reconciliation snapshots.',
-    status: 'Next sync 18:30',
-  },
+const attendanceStatuses: AttendanceStatus[] = [
+  { status: 'Present', count: 148, color: '#22c55e' },
+  { status: 'Absent', count: 24, color: '#ef4444' },
+  { status: 'Late', count: 13, color: '#f59e0b' },
+  { status: 'Day off', count: 35, color: '#3b82f6' },
 ]
 
 function App() {
+  const totalEmployees = attendanceStatuses.reduce((sum, item) => sum + item.count, 0)
+  let cumulative = 0
+
+  const pieGradient = attendanceStatuses
+    .map((item) => {
+      const start = (cumulative / totalEmployees) * 100
+      cumulative += item.count
+      const end = (cumulative / totalEmployees) * 100
+      return `${item.color} ${start}% ${end}%`
+    })
+    .join(', ')
+
   return (
     <div className="dashboard-shell">
       <aside className="sidebar">
@@ -95,10 +78,7 @@ function App() {
 
       <main className="content">
         <header className="topbar">
-          <div>
-            <p className="topbar-label">Attendance Management System</p>
-            <h1>Dashboard</h1>
-          </div>
+          <h1>Dashboard</h1>
           <div className="topbar-actions">
             <button type="button" className="secondary-btn">
               Export Snapshot
@@ -109,48 +89,33 @@ function App() {
           </div>
         </header>
 
-        <section className="stats-grid" aria-label="KPI summary">
-          {statCards.map((card) => (
-            <article key={card.label} className="stat-card">
-              <p className="stat-label">{card.label}</p>
-              <p className="stat-value">{card.value}</p>
-              <p className="stat-delta">{card.delta}</p>
-            </article>
-          ))}
-        </section>
+        <section className="attendance-summary" aria-label="Attendance status chart">
+          <h2>Employees Attendance</h2>
+          <div className="attendance-chart-row">
+            <div
+              className="attendance-pie"
+              style={{ background: `conic-gradient(${pieGradient})` }}
+              role="img"
+              aria-label="Employees attendance status distribution pie chart"
+            />
+            <ul className="attendance-legend">
+              {attendanceStatuses.map((item) => {
+                const percentage = ((item.count / totalEmployees) * 100).toFixed(1)
 
-        <section className="modules-grid" aria-label="Attendance modules">
-          {moduleCards.map((module) => (
-            <article key={module.title} className="module-card">
-              <div>
-                <h2>{module.title}</h2>
-                <p>{module.description}</p>
-              </div>
-              <span className="module-status">{module.status}</span>
-            </article>
-          ))}
-        </section>
-
-        <section className="panel-row" aria-label="Operational panels">
-          <article className="panel-card">
-            <div className="panel-header">
-              <h3>Today Attendance Timeline</h3>
-              <span>Awaiting data</span>
-            </div>
-            <div className="chart-placeholder" role="img" aria-label="Timeline placeholder" />
-          </article>
-
-          <article className="panel-card">
-            <div className="panel-header">
-              <h3>Recent Events</h3>
-              <span>0 records</span>
-            </div>
-            <ul className="event-list">
-              <li>No activity yet.</li>
-              <li>Face enrollment events will appear here.</li>
-              <li>Verification anomalies will be listed for review.</li>
+                return (
+                  <li key={item.status}>
+                    <span className="legend-label">
+                      <span className="legend-dot" style={{ backgroundColor: item.color }} />
+                      {item.status}
+                    </span>
+                    <span className="legend-value">
+                      {item.count} ({percentage}%)
+                    </span>
+                  </li>
+                )
+              })}
             </ul>
-          </article>
+          </div>
         </section>
       </main>
     </div>
