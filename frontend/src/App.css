@@ -240,6 +240,18 @@
   word-break: break-word;
 }
 
+.notification-actions {
+  margin-top: 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.notification-action-error {
+  font-size: 0.72rem;
+  color: #b91c1c;
+}
+
 .topbar-label {
   margin: 0;
   text-transform: uppercase;

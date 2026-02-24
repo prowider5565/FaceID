@@ -21,6 +21,7 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from config.database import Base
+from cameras.models import Camera  # noqa: F401
 from users.models import User  # noqa: F401
 from ws.models import Notification  # noqa: F401
 

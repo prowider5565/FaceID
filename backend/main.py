@@ -8,13 +8,20 @@ from fastapi_pagination import add_pagination
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 
+from cameras import router as cameras_router
+from cameras.models import Camera
 from config.database import SessionLocal
 from config.settings import settings
 from users import router as users_router
 from users.models import User
 from users.schemas import GetUser
 from ws import extract_webhook_payload, router as websockets_router, ws_manager
-from ws.schema import AttendanceEventDataSchema, WebhookAttendanceResponseSchema
+from ws.schema import (
+    AttendanceEventDataSchema,
+    CameraEnrollmentDataSchema,
+    WebhookAttendanceResponseSchema,
+    WebhookCameraEnrollmentResponseSchema,
+)
 from ws.types import DirectionType, EventType
 
 
@@ -39,6 +46,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(cameras_router)
 app.include_router(users_router)
 app.include_router(websockets_router)
 add_pagination(app)
@@ -70,9 +78,13 @@ def _resolve_user_from_payload(payload: dict) -> User | None:
     finally:
         db.close()
 
-def check_camera(ip_addr: str):
+
+def check_camera(ip_addr: str) -> Camera | None:
     db = SessionLocal()
-    
+    try:
+        return db.execute(select(Camera).where(Camera.ip_address == ip_addr)).scalar_one_or_none()
+    finally:
+        db.close()
 
 
 @app.post("/webhook")
@@ -84,11 +96,25 @@ async def webhook(request: Request):
         return {"ok": False, "detail": "Could not parse webhook JSON payload"}
 
     payload_dict = payload if isinstance(payload, dict) else {}
-    camera_ip = payload_dict.get("ipAddress", None)
-    if camera_ip is not None:
+
+    ip_address = str(payload_dict.get("ipAddress") or "").strip()
+    access_event = payload_dict.get("AccessControllerEvent")
+    device_name = "Unknown Device"
+    if isinstance(access_event, dict):
+        device_name = str(access_event.get("deviceName") or device_name)
+
+    if ip_address and check_camera(ip_address) is None:
+        camera_enrollment_payload = WebhookCameraEnrollmentResponseSchema(
+            event_type=EventType.CAMERA_ENROLLMENT,
+            data=CameraEnrollmentDataSchema(
+                ip_address=ip_address,
+                device_name=device_name,
+            ),
+        ).model_dump(mode="json")
+        await ws_manager.broadcast_json(camera_enrollment_payload)
 
     user = _resolve_user_from_payload(payload_dict)
-    response_payload = WebhookAttendanceResponseSchema(
+    attendance_payload = WebhookAttendanceResponseSchema(
         event_type=EventType.ATTENDANCE,
         data=AttendanceEventDataSchema(
             user=GetUser.model_validate(user) if user is not None else None,
@@ -97,5 +123,5 @@ async def webhook(request: Request):
         ),
     ).model_dump(mode="json")
 
-    await ws_manager.broadcast_json(response_payload)
-    return response_payload
+    await ws_manager.broadcast_json(attendance_payload)
+    return attendance_payload

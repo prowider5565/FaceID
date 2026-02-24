@@ -41,7 +41,7 @@ type NotificationUser = {
 }
 
 type AttendanceNotificationPayload = {
-  event_type: string
+  event_type: 'Attendance'
   data: {
     user: NotificationUser | null
     attendance_date: string | null
@@ -49,11 +49,23 @@ type AttendanceNotificationPayload = {
   }
 }
 
+type CameraEnrollmentNotificationPayload = {
+  event_type: 'CameraEnrollment'
+  data: {
+    ip_address: string
+    device_name: string
+  }
+}
+
+type NotificationPayload = AttendanceNotificationPayload | CameraEnrollmentNotificationPayload | unknown
+type CameraEnrollmentState = 'pending' | 'loading' | 'done' | 'error'
+
 type DashboardNotification = {
   id: number
-  payload: unknown
+  payload: NotificationPayload
   receivedAt: string
   isRead: boolean
+  cameraEnrollmentState?: CameraEnrollmentState
 }
 
 type CameraStatus = 'Online' | 'Offline'
@@ -87,11 +99,25 @@ const isAttendanceNotificationPayload = (payload: unknown): payload is Attendanc
   const candidate = payload as Record<string, unknown>
   const data = candidate.data as Record<string, unknown> | undefined
   return (
-    typeof candidate.event_type === 'string' &&
+    candidate.event_type === 'Attendance' &&
     !!data &&
     typeof data.direction === 'string' &&
     ('attendance_date' in data) &&
     ('user' in data)
+  )
+}
+
+const isCameraEnrollmentNotificationPayload = (
+  payload: unknown,
+): payload is CameraEnrollmentNotificationPayload => {
+  if (!payload || typeof payload !== 'object') return false
+  const candidate = payload as Record<string, unknown>
+  const data = candidate.data as Record<string, unknown> | undefined
+  return (
+    candidate.event_type === 'CameraEnrollment' &&
+    !!data &&
+    typeof data.ip_address === 'string' &&
+    typeof data.device_name === 'string'
   )
 }
 
@@ -100,6 +126,7 @@ function App() {
   const [notifications, setNotifications] = useState<DashboardNotification[]>([])
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false)
   const wsUrl = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8000/ws/webhook-events'
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
   const notificationPanelOpenRef = useRef(isNotificationPanelOpen)
 
   useEffect(() => {
@@ -128,6 +155,7 @@ function App() {
             payload,
             receivedAt: new Date().toISOString(),
             isRead: notificationPanelOpenRef.current,
+            cameraEnrollmentState: isCameraEnrollmentNotificationPayload(payload) ? 'pending' : undefined,
           },
           ...existing,
         ])
@@ -168,6 +196,46 @@ function App() {
       }
       return next
     })
+  }
+
+  const handleRegisterCamera = async (notificationId: number) => {
+    const notification = notifications.find((item) => item.id === notificationId)
+    if (!notification || !isCameraEnrollmentNotificationPayload(notification.payload)) return
+
+    setNotifications((existing) =>
+      existing.map((item) =>
+        item.id === notificationId ? { ...item, cameraEnrollmentState: 'loading' } : item,
+      ),
+    )
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/cameras/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ip_address: notification.payload.data.ip_address,
+          device_name: notification.payload.data.device_name,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to register camera')
+      }
+
+      setNotifications((existing) =>
+        existing.map((item) =>
+          item.id === notificationId
+            ? { ...item, cameraEnrollmentState: 'done', isRead: true }
+            : item,
+        ),
+      )
+    } catch {
+      setNotifications((existing) =>
+        existing.map((item) =>
+          item.id === notificationId ? { ...item, cameraEnrollmentState: 'error' } : item,
+        ),
+      )
+    }
   }
 
   const checkinsToday = useMemo(() => {
@@ -337,6 +405,7 @@ function App() {
             unreadNotifications={unreadNotifications}
             isNotificationPanelOpen={isNotificationPanelOpen}
             onToggleNotifications={handleToggleNotifications}
+            onRegisterCamera={handleRegisterCamera}
           />
         ) : activePage === 'employees' ? (
           <Employees />
