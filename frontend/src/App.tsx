@@ -26,11 +26,6 @@ type Employee = {
   checkInAt: string | null
 }
 
-type CheckInStatus = {
-  label: 'Checked in' | 'Not checked in yet' | 'Late today'
-  count: number
-}
-
 const navigationItems: NavItem[] = [
   { label: 'Overview', active: true },
   { label: 'Live Capture' },
@@ -129,30 +124,7 @@ function App() {
     },
   ]
 
-  const isLateCheckIn = (employee: Employee) => {
-    if (!employee.checkInAt) return false
-    const checkInTime = new Date(employee.checkInAt)
-    const lateCutoff =
-      employee.shift === 'Day' ? new Date(`${todayDate}T09:00:00`) : new Date(`${todayDate}T21:00:00`)
-    return checkInTime > lateCutoff
-  }
-
   const activeEmployees = employees.filter((employee) => employee.isActive)
-
-  const todayCheckInStatuses: CheckInStatus[] = [
-    {
-      label: 'Checked in',
-      count: activeEmployees.filter((employee) => employee.checkInAt && !isLateCheckIn(employee)).length,
-    },
-    {
-      label: 'Not checked in yet',
-      count: activeEmployees.filter((employee) => !employee.checkInAt).length,
-    },
-    {
-      label: 'Late today',
-      count: activeEmployees.filter((employee) => employee.checkInAt && isLateCheckIn(employee)).length,
-    },
-  ]
 
   const totalEmployees = attendanceStatuses.reduce((sum, item) => sum + item.count, 0)
   let cumulative = 0
@@ -215,14 +187,6 @@ function App() {
         <section className="insights-row" aria-label="Today attendance insights">
           <article className="checkin-summary">
             <h2>Today&apos;s Check-in Status (real-time)</h2>
-            <ul className="checkin-list">
-              {todayCheckInStatuses.map((item) => (
-                <li key={item.label}>
-                  <span>{item.label}</span>
-                  <strong>{item.count}</strong>
-                </li>
-              ))}
-            </ul>
 
             <div className="employee-checkin-cards">
               {activeEmployees.map((employee) => (
@@ -235,10 +199,7 @@ function App() {
                   </div>
                   <p className="employee-checkin-time">
                     {employee.checkInAt
-                      ? new Date(employee.checkInAt).toLocaleString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
+                      ? new Date(employee.checkInAt).toLocaleTimeString('en-US', {
                           hour: '2-digit',
                           minute: '2-digit',
                         })

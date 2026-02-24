@@ -159,8 +159,9 @@ h1 {
 
 .insights-row {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(420px, 520px);
+  grid-template-columns: minmax(280px, 360px) minmax(420px, 520px);
   align-items: start;
+  justify-content: space-between;
   gap: 1rem;
 }
 
@@ -169,6 +170,8 @@ h1 {
   border: 1px solid #dbe5f1;
   background: rgba(255, 255, 255, 0.93);
   padding: 1.1rem;
+  max-height: 540px;
+  overflow-y: auto;
 }
 
 .checkin-summary h2 {
@@ -178,35 +181,8 @@ h1 {
   color: #0f172a;
 }
 
-.checkin-list {
-  margin: 0.95rem 0 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.72rem;
-}
-
-.checkin-list li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-radius: 0.45rem;
-  padding: 0.72rem 0.75rem;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #334155;
-  font-size: 0.9rem;
-}
-
-.checkin-list strong {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
 .employee-checkin-cards {
-  margin-top: 0.95rem;
+  margin-top: 0.85rem;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
