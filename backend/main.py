@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi_pagination import add_pagination
 from config.settings import settings
+from users import router as users_router
 import json
 import re
 import subprocess
@@ -24,6 +25,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 add_pagination(app)
+app.include_router(users_router)
 
 
 @app.post("/webhook")

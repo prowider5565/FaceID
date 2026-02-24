@@ -5,4 +5,4 @@ class BaseModel(BM):
     """Read ORM objects correctly with orm_mode True"""
 
     class Config:
-        orm_mode = True
+        from_attributes = True
