@@ -5,12 +5,14 @@ import Cameras from './pages/Cameras'
 import Employees from './pages/Employees'
 
 type Shift = 'Day' | 'Night'
+type EmployeeRole = 'Manager' | 'Admin' | 'Employee'
 
 type Employee = {
   id: number
   fullName: string
   phoneNumber: string
   hourlyRate: number
+  role: EmployeeRole
   position: string
   shift: Shift
   isActive: boolean
@@ -73,6 +75,7 @@ function App() {
       fullName: 'Maria Lopez',
       phoneNumber: '+1-555-0101',
       hourlyRate: 22.5,
+      role: 'Employee',
       position: 'Receptionist',
       shift: 'Day',
       isActive: true,
@@ -85,6 +88,7 @@ function App() {
       fullName: 'James Carter',
       phoneNumber: '+1-555-0102',
       hourlyRate: 28,
+      role: 'Employee',
       position: 'Security Officer',
       shift: 'Day',
       isActive: true,
@@ -97,6 +101,7 @@ function App() {
       fullName: 'Olivia Nguyen',
       phoneNumber: '+1-555-0103',
       hourlyRate: 24,
+      role: 'Admin',
       position: 'HR Specialist',
       shift: 'Day',
       isActive: true,
@@ -109,6 +114,7 @@ function App() {
       fullName: 'Noah Patel',
       phoneNumber: '+1-555-0104',
       hourlyRate: 26,
+      role: 'Employee',
       position: 'Warehouse Clerk',
       shift: 'Night',
       isActive: true,
@@ -121,6 +127,7 @@ function App() {
       fullName: 'Ava Johnson',
       phoneNumber: '+1-555-0105',
       hourlyRate: 31.5,
+      role: 'Manager',
       position: 'Floor Supervisor',
       shift: 'Day',
       isActive: true,
@@ -133,6 +140,7 @@ function App() {
       fullName: 'Ethan Wright',
       phoneNumber: '+1-555-0106',
       hourlyRate: 27,
+      role: 'Admin',
       position: 'Maintenance Tech',
       shift: 'Night',
       isActive: false,

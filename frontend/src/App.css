@@ -358,18 +358,18 @@ h1 {
   gap: 1rem;
 }
 
-.employees-header {
+.employees-toolbar {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
 }
 
-.employees-header h1 {
+.employees-toolbar h1 {
   margin: 0;
 }
 
-.employees-header p {
+.employees-toolbar p {
   margin: 0.35rem 0 0;
   color: #64748b;
   font-size: 0.9rem;
@@ -678,7 +678,7 @@ h1 {
     align-items: flex-start;
   }
 
-  .employees-header {
+  .employees-toolbar {
     flex-direction: column;
   }
 

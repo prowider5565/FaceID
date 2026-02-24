@@ -1,42 +1,41 @@
 import { useEffect, useMemo, useState } from 'react'
 
 type Shift = 'Day' | 'Night'
+type EmployeeRole = 'Manager' | 'Admin' | 'Employee'
 
 type Employee = {
   id: number
   fullName: string
   phoneNumber: string
   hourlyRate: number
+  role: EmployeeRole
   position: string
   shift: Shift
   isActive: boolean
   createdAt: string
 }
 
-type EmployeeTab = 'all' | 'day' | 'night' | 'inactive'
+type EmployeeTab = 'managers' | 'admins' | 'employees'
 
 type EmployeesProps = {
   employees: Employee[]
 }
 
 const tabs: { id: EmployeeTab; label: string }[] = [
-  { id: 'all', label: 'All Employees' },
-  { id: 'day', label: 'Day Shift' },
-  { id: 'night', label: 'Night Shift' },
-  { id: 'inactive', label: 'Inactive' },
+  { id: 'employees', label: 'Employees' },
+  { id: 'managers', label: 'Managers' },
+  { id: 'admins', label: 'Admins' },
 ]
 
 function Employees({ employees }: EmployeesProps) {
-  const [activeTab, setActiveTab] = useState<EmployeeTab>('all')
+  const [activeTab, setActiveTab] = useState<EmployeeTab>('employees')
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 5
 
   const filteredEmployees = useMemo(() => {
-    if (activeTab === 'day') return employees.filter((employee) => employee.shift === 'Day' && employee.isActive)
-    if (activeTab === 'night')
-      return employees.filter((employee) => employee.shift === 'Night' && employee.isActive)
-    if (activeTab === 'inactive') return employees.filter((employee) => !employee.isActive)
-    return employees
+    if (activeTab === 'managers') return employees.filter((employee) => employee.role === 'Manager')
+    if (activeTab === 'admins') return employees.filter((employee) => employee.role === 'Admin')
+    return employees.filter((employee) => employee.role === 'Employee')
   }, [activeTab, employees])
 
   const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / pageSize))
@@ -55,7 +54,7 @@ function Employees({ employees }: EmployeesProps) {
 
   return (
     <section className="employees-page">
-      <header className="employees-header">
+      <div className="employees-toolbar">
         <div>
           <h1>Employees</h1>
           <p>Manage employee records, shifts, and roster activity.</p>
@@ -63,7 +62,7 @@ function Employees({ employees }: EmployeesProps) {
         <button type="button" className="primary-btn">
           Add New Employee
         </button>
-      </header>
+      </div>
 
       <div className="employees-table-card">
         <div className="employees-tabs" role="tablist" aria-label="Employee views">
