@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, Request
+from fastapi_pagination import add_pagination
 from config.settings import settings
 import json
 import re
@@ -22,6 +23,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+add_pagination(app)
 
 
 @app.post("/webhook")

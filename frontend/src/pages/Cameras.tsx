@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import Button from '../components/Button'
 
 type CameraStatus = 'Online' | 'Offline'
 type CameraPosition = 'CheckIn' | 'CheckOut'
@@ -70,9 +71,9 @@ function Cameras({ cameras }: CamerasProps) {
           <h1>Cameras</h1>
           <p>Monitor camera endpoints and manage their assignment and status.</p>
         </div>
-        <button type="button" className="primary-btn" onClick={() => setIsCreateModalOpen(true)}>
+        <Button type="button" variant="primary" onClick={() => setIsCreateModalOpen(true)}>
           Add New Camera
-        </button>
+        </Button>
       </header>
 
       <div className="cameras-grid">

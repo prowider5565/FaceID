@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import Button from '../components/Button'
+import SearchBar from '../components/SearchBar'
 
 type Shift = 'Day' | 'Night'
 type EmployeeRole = 'Manager' | 'Admin' | 'Employee'
@@ -16,11 +18,11 @@ type Employee = {
   updatedAt: string
 }
 
-type EmployeeTab = 'managers' | 'admins' | 'employees'
-
 type EmployeesProps = {
   employees: Employee[]
 }
+
+type EmployeeTab = 'managers' | 'admins' | 'employees'
 
 const tabs: { id: EmployeeTab; label: string }[] = [
   { id: 'employees', label: 'Employees' },
@@ -41,10 +43,60 @@ type EditEmployeeForm = {
 const uzbekistanPhoneRegex = /^(?:\+?998)(?:[\s-]?\d{2})(?:[\s-]?\d{3})(?:[\s-]?\d{2})(?:[\s-]?\d{2})$/
 const russianPhoneRegex = /^(?:\+7|8)(?:[\s-]?\(?\d{3}\)?)(?:[\s-]?\d{3})(?:[\s-]?\d{2})(?:[\s-]?\d{2})$/
 
+type ApiEmployee = {
+  id: number
+  full_name: string
+  phone_number: string
+  hourly_rate: number | string
+  role: string
+  position: string
+  shift: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+
+const normalizeRole = (role: string): EmployeeRole => {
+  if (role.toLowerCase() === 'manager') return 'Manager'
+  if (role.toLowerCase() === 'admin') return 'Admin'
+  return 'Employee'
+}
+
+const normalizeShift = (shift: string): Shift => (shift.toLowerCase() === 'night' ? 'Night' : 'Day')
+
+const mapApiEmployee = (apiEmployee: ApiEmployee): Employee => ({
+  id: apiEmployee.id,
+  fullName: apiEmployee.full_name,
+  phoneNumber: apiEmployee.phone_number,
+  hourlyRate: Number(apiEmployee.hourly_rate),
+  role: normalizeRole(apiEmployee.role),
+  position: apiEmployee.position,
+  shift: normalizeShift(apiEmployee.shift),
+  isActive: apiEmployee.is_active,
+  createdAt: apiEmployee.created_at,
+  updatedAt: apiEmployee.updated_at,
+})
+
+const parseEmployeesResponse = (data: unknown): Employee[] => {
+  if (Array.isArray(data)) {
+    return data.map((employee) => mapApiEmployee(employee as ApiEmployee))
+  }
+
+  if (data && typeof data === 'object' && 'items' in data && Array.isArray((data as { items: unknown[] }).items)) {
+    return (data as { items: ApiEmployee[] }).items.map(mapApiEmployee)
+  }
+
+  return []
+}
+
 function Employees({ employees }: EmployeesProps) {
   const [activeTab, setActiveTab] = useState<EmployeeTab>('employees')
   const [currentPage, setCurrentPage] = useState(1)
   const [employeeRows, setEmployeeRows] = useState<Employee[]>(employees)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [employeePendingDisable, setEmployeePendingDisable] = useState<Employee | null>(null)
   const [employeeEditing, setEmployeeEditing] = useState<Employee | null>(null)
   const [editError, setEditError] = useState('')
@@ -60,8 +112,51 @@ function Employees({ employees }: EmployeesProps) {
   const pageSize = 5
 
   useEffect(() => {
-    setEmployeeRows(employees)
-  }, [employees])
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(search.trim())
+    }, 350)
+
+    return () => window.clearTimeout(timer)
+  }, [search])
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    const loadEmployees = async () => {
+      try {
+        const params = new URLSearchParams({ search: debouncedSearch })
+        const query = params.toString()
+        const response = await fetch(`${API_BASE_URL}/employees?${query}`, {
+          signal: controller.signal,
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to load employees')
+        }
+
+        const data = await response.json()
+        setEmployeeRows(parseEmployeesResponse(data))
+      } catch {
+        if (controller.signal.aborted) return
+
+        const fallback = employees.filter((employee) => {
+          if (!debouncedSearch) return true
+          const q = debouncedSearch.toLowerCase()
+          return (
+            employee.fullName.toLowerCase().includes(q) ||
+            employee.phoneNumber.toLowerCase().includes(q) ||
+            employee.position.toLowerCase().includes(q) ||
+            employee.role.toLowerCase().includes(q)
+          )
+        })
+        setEmployeeRows(fallback)
+      }
+    }
+
+    loadEmployees()
+
+    return () => controller.abort()
+  }, [debouncedSearch, employees])
 
   const filteredEmployees = useMemo(() => {
     if (activeTab === 'managers') return employeeRows.filter((employee) => employee.role === 'Manager')
@@ -75,7 +170,7 @@ function Employees({ employees }: EmployeesProps) {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [activeTab])
+  }, [activeTab, debouncedSearch])
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -160,9 +255,9 @@ function Employees({ employees }: EmployeesProps) {
           <h1>Employees</h1>
           <p>Manage employee records, shifts, and roster activity.</p>
         </div>
-        <button type="button" className="primary-btn">
+        <Button type="button" variant="primary">
           Add New Employee
-        </button>
+        </Button>
       </div>
 
       <div className="employees-table-card">
@@ -179,6 +274,14 @@ function Employees({ employees }: EmployeesProps) {
               {tab.label}
             </button>
           ))}
+          <div className="employees-search-slot">
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder="Search employees by name, phone, role, or position"
+              ariaLabel="Search employees"
+            />
+          </div>
         </div>
 
         <div className="employees-table-wrap">

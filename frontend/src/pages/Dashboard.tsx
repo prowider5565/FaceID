@@ -1,4 +1,5 @@
 import AttendancePieCard from '../components/AttendancePieCard'
+import Button from '../components/Button'
 import CheckinTodayCard from '../components/CheckinTodayCard'
 import CountCards from '../components/CountCards'
 
@@ -59,12 +60,12 @@ function Dashboard({ employees, metrics, attendanceStatuses }: DashboardProps) {
 
         <header className="topbar">
           <div className="topbar-actions">
-            <button type="button" className="secondary-btn">
+            <Button type="button" variant="secondary">
               Export Snapshot
-            </button>
-            <button type="button" className="primary-btn">
+            </Button>
+            <Button type="button" variant="primary">
               Register Face Profile
-            </button>
+            </Button>
           </div>
         </header>
       </div>
