@@ -11,6 +11,26 @@ type AttendanceStatus = {
   color: string
 }
 
+type Shift = 'Day' | 'Night'
+
+type Employee = {
+  id: number
+  fullName: string
+  phoneNumber: string
+  hourlyRate: number
+  position: string
+  shift: Shift
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  checkInAt: string | null
+}
+
+type CheckInStatus = {
+  label: 'Checked in' | 'Not checked in yet' | 'Late today'
+  count: number
+}
+
 const navigationItems: NavItem[] = [
   { label: 'Overview', active: true },
   { label: 'Live Capture' },
@@ -31,6 +51,109 @@ const attendanceStatuses: AttendanceStatus[] = [
 ]
 
 function App() {
+  const now = new Date()
+  const todayDate = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, '0')}-${`${now.getDate()}`.padStart(2, '0')}`
+
+  const employees: Employee[] = [
+    {
+      id: 100001,
+      fullName: 'Maria Lopez',
+      phoneNumber: '+1-555-0101',
+      hourlyRate: 22.5,
+      position: 'Receptionist',
+      shift: 'Day',
+      isActive: true,
+      createdAt: '2025-07-12T10:00:00',
+      updatedAt: '2026-02-24T08:00:00',
+      checkInAt: `${todayDate}T08:43:00`,
+    },
+    {
+      id: 100002,
+      fullName: 'James Carter',
+      phoneNumber: '+1-555-0102',
+      hourlyRate: 28,
+      position: 'Security Officer',
+      shift: 'Day',
+      isActive: true,
+      createdAt: '2025-08-01T09:30:00',
+      updatedAt: '2026-02-24T08:10:00',
+      checkInAt: `${todayDate}T09:18:00`,
+    },
+    {
+      id: 100003,
+      fullName: 'Olivia Nguyen',
+      phoneNumber: '+1-555-0103',
+      hourlyRate: 24,
+      position: 'HR Specialist',
+      shift: 'Day',
+      isActive: true,
+      createdAt: '2025-05-09T11:20:00',
+      updatedAt: '2026-02-24T08:12:00',
+      checkInAt: `${todayDate}T08:55:00`,
+    },
+    {
+      id: 100004,
+      fullName: 'Noah Patel',
+      phoneNumber: '+1-555-0104',
+      hourlyRate: 26,
+      position: 'Warehouse Clerk',
+      shift: 'Night',
+      isActive: true,
+      createdAt: '2025-10-02T13:10:00',
+      updatedAt: '2026-02-24T07:50:00',
+      checkInAt: null,
+    },
+    {
+      id: 100005,
+      fullName: 'Ava Johnson',
+      phoneNumber: '+1-555-0105',
+      hourlyRate: 31.5,
+      position: 'Floor Supervisor',
+      shift: 'Day',
+      isActive: true,
+      createdAt: '2025-04-18T12:00:00',
+      updatedAt: '2026-02-24T08:01:00',
+      checkInAt: `${todayDate}T09:07:00`,
+    },
+    {
+      id: 100006,
+      fullName: 'Ethan Wright',
+      phoneNumber: '+1-555-0106',
+      hourlyRate: 27,
+      position: 'Maintenance Tech',
+      shift: 'Night',
+      isActive: true,
+      createdAt: '2025-11-11T09:40:00',
+      updatedAt: '2026-02-24T08:08:00',
+      checkInAt: `${todayDate}T20:52:00`,
+    },
+  ]
+
+  const isLateCheckIn = (employee: Employee) => {
+    if (!employee.checkInAt) return false
+    const checkInTime = new Date(employee.checkInAt)
+    const lateCutoff =
+      employee.shift === 'Day' ? new Date(`${todayDate}T09:00:00`) : new Date(`${todayDate}T21:00:00`)
+    return checkInTime > lateCutoff
+  }
+
+  const activeEmployees = employees.filter((employee) => employee.isActive)
+
+  const todayCheckInStatuses: CheckInStatus[] = [
+    {
+      label: 'Checked in',
+      count: activeEmployees.filter((employee) => employee.checkInAt && !isLateCheckIn(employee)).length,
+    },
+    {
+      label: 'Not checked in yet',
+      count: activeEmployees.filter((employee) => !employee.checkInAt).length,
+    },
+    {
+      label: 'Late today',
+      count: activeEmployees.filter((employee) => employee.checkInAt && isLateCheckIn(employee)).length,
+    },
+  ]
+
   const totalEmployees = attendanceStatuses.reduce((sum, item) => sum + item.count, 0)
   let cumulative = 0
 
@@ -89,33 +212,71 @@ function App() {
           </div>
         </header>
 
-        <section className="attendance-summary" aria-label="Attendance status chart">
-          <h2>Employees Attendance</h2>
-          <div className="attendance-chart-row">
-            <div
-              className="attendance-pie"
-              style={{ background: `conic-gradient(${pieGradient})` }}
-              role="img"
-              aria-label="Employees attendance status distribution pie chart"
-            />
-            <ul className="attendance-legend">
-              {attendanceStatuses.map((item) => {
-                const percentage = ((item.count / totalEmployees) * 100).toFixed(1)
-
-                return (
-                  <li key={item.status}>
-                    <span className="legend-label">
-                      <span className="legend-dot" style={{ backgroundColor: item.color }} />
-                      {item.status}
-                    </span>
-                    <span className="legend-value">
-                      {item.count} ({percentage}%)
-                    </span>
-                  </li>
-                )
-              })}
+        <section className="insights-row" aria-label="Today attendance insights">
+          <article className="checkin-summary">
+            <h2>Today&apos;s Check-in Status (real-time)</h2>
+            <ul className="checkin-list">
+              {todayCheckInStatuses.map((item) => (
+                <li key={item.label}>
+                  <span>{item.label}</span>
+                  <strong>{item.count}</strong>
+                </li>
+              ))}
             </ul>
-          </div>
+
+            <div className="employee-checkin-cards">
+              {activeEmployees.map((employee) => (
+                <article key={employee.id} className="employee-checkin-card">
+                  <div>
+                    <p className="employee-name">{employee.fullName}</p>
+                    <p className="employee-meta">
+                      {employee.position} • {employee.shift} Shift
+                    </p>
+                  </div>
+                  <p className="employee-checkin-time">
+                    {employee.checkInAt
+                      ? new Date(employee.checkInAt).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : 'Not checked in yet'}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </article>
+
+          <article className="attendance-summary" aria-label="Attendance status chart">
+            <h2>Employees Attendance</h2>
+            <div className="attendance-chart-row">
+              <div
+                className="attendance-pie"
+                style={{ background: `conic-gradient(${pieGradient})` }}
+                role="img"
+                aria-label="Employees attendance status distribution pie chart"
+              />
+              <ul className="attendance-legend">
+                {attendanceStatuses.map((item) => {
+                  const percentage = ((item.count / totalEmployees) * 100).toFixed(1)
+
+                  return (
+                    <li key={item.status}>
+                      <span className="legend-label">
+                        <span className="legend-dot" style={{ backgroundColor: item.color }} />
+                        {item.status}
+                      </span>
+                      <span className="legend-value">
+                        {item.count} ({percentage}%)
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          </article>
         </section>
       </main>
     </div>
