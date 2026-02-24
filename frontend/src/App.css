@@ -136,6 +136,10 @@
   gap: 0.45rem;
 }
 
+.notifications-anchor {
+  position: relative;
+}
+
 .utility-icon-btn {
   width: 2.15rem;
   height: 2.15rem;
@@ -161,6 +165,79 @@
   stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -0.32rem;
+  right: -0.32rem;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 0.67rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  padding: 0 0.24rem;
+  line-height: 1;
+}
+
+.notification-panel {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  width: min(420px, 86vw);
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid #dbe5f1;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.2);
+  padding: 0.6rem;
+  z-index: 30;
+}
+
+.notification-panel-title {
+  margin: 0;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.notification-empty {
+  margin: 0.55rem 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.notification-list {
+  margin-top: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.notification-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.42rem;
+  background: #f8fafc;
+  padding: 0.45rem;
+}
+
+.notification-time {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.notification-json {
+  margin: 0.35rem 0 0;
+  font-size: 0.71rem;
+  color: #1e293b;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .topbar-label {

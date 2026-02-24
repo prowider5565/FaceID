@@ -1,6 +1,8 @@
 from datetime import datetime
 
 from common.pydantic_basemodel import BaseModel
+from users.schemas import GetUser
+from ws.types import DirectionType, EventType
 
 
 class FaceRectSchema(BaseModel):
@@ -47,6 +49,17 @@ class FaceIDSchema(BaseModel):
     eventDescription: str
     deviceID: str
     AccessControllerEvent: AccessControllerEventSchema
+
+
+class AttendanceEventDataSchema(BaseModel):
+    user: GetUser | None
+    attendance_date: datetime | None
+    direction: DirectionType
+
+
+class WebhookAttendanceResponseSchema(BaseModel):
+    event_type: EventType
+    data: AttendanceEventDataSchema
 
 
 FACE_ID_EXAMPLE_PAYLOAD = {

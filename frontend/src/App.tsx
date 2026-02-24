@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import Dashboard from './pages/Dashboard'
 import Cameras from './pages/Cameras'
@@ -30,6 +30,13 @@ type AttendanceStatus = {
 type SystemMetric = {
   label: 'Cameras' | 'Employees' | 'Admins' | 'Managers'
   count: number
+}
+
+type DashboardNotification = {
+  id: number
+  payload: unknown
+  receivedAt: string
+  isRead: boolean
 }
 
 type CameraStatus = 'Online' | 'Offline'
@@ -66,8 +73,80 @@ const attendanceStatuses: AttendanceStatus[] = [
 
 function App() {
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
+  const [notifications, setNotifications] = useState<DashboardNotification[]>([])
+  const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false)
   const now = new Date()
   const todayDate = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, '0')}-${`${now.getDate()}`.padStart(2, '0')}`
+  const wsUrl = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8000/ws/webhook-events'
+  const notificationPanelOpenRef = useRef(isNotificationPanelOpen)
+
+  useEffect(() => {
+    notificationPanelOpenRef.current = isNotificationPanelOpen
+  }, [isNotificationPanelOpen])
+
+  useEffect(() => {
+    let socket: WebSocket | null = null
+    let reconnectTimer: number | undefined
+    let shouldReconnect = true
+
+    const connect = () => {
+      socket = new WebSocket(wsUrl)
+
+      socket.onmessage = (event) => {
+        let payload: unknown = event.data
+        try {
+          payload = JSON.parse(event.data)
+        } catch {
+          // Keep raw text if backend ever sends non-JSON.
+        }
+
+        setNotifications((existing) => [
+          {
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            payload,
+            receivedAt: new Date().toISOString(),
+            isRead: notificationPanelOpenRef.current,
+          },
+          ...existing,
+        ])
+      }
+
+      socket.onclose = () => {
+        if (shouldReconnect) {
+          reconnectTimer = window.setTimeout(connect, 1500)
+        }
+      }
+    }
+
+    connect()
+
+    return () => {
+      shouldReconnect = false
+      if (reconnectTimer) {
+        window.clearTimeout(reconnectTimer)
+      }
+      socket?.close()
+    }
+  }, [wsUrl])
+
+  const unreadNotifications = useMemo(
+    () => notifications.filter((notification) => !notification.isRead).length,
+    [notifications],
+  )
+
+  const handleToggleNotifications = () => {
+    setIsNotificationPanelOpen((isOpen) => {
+      const next = !isOpen
+      if (next) {
+        setNotifications((existing) =>
+          existing.map((notification) =>
+            notification.isRead ? notification : { ...notification, isRead: true },
+          ),
+        )
+      }
+      return next
+    })
+  }
 
   const employees: Employee[] = [
     {
@@ -249,6 +328,10 @@ function App() {
             employees={activeEmployees}
             metrics={systemMetrics}
             attendanceStatuses={attendanceStatuses}
+            notifications={notifications}
+            unreadNotifications={unreadNotifications}
+            isNotificationPanelOpen={isNotificationPanelOpen}
+            onToggleNotifications={handleToggleNotifications}
           />
         ) : activePage === 'employees' ? (
           <Employees />
