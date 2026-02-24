@@ -255,6 +255,28 @@ h1 {
   font-size: 0.82rem;
 }
 
+.metric-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.metric-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: #2563eb;
+}
+
+.metric-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .metric-grid strong {
   color: #0f172a;
   font-size: 1.05rem;
