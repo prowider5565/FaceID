@@ -1,14 +1,15 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+import subprocess
+import sys
+
 from fastapi import FastAPI, Request
 from fastapi_pagination import add_pagination
 from fastapi.middleware.cors import CORSMiddleware
+
 from config.settings import settings
 from users import router as users_router
-import json
-import re
-import subprocess
-import sys
+from ws import extract_webhook_payload, router as websockets_router, ws_manager
 
 
 @asynccontextmanager
@@ -33,40 +34,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(users_router)
+app.include_router(websockets_router)
 add_pagination(app)
 
 
 @app.post("/webhook")
 async def webhook(request: Request):
     raw = await request.body()
-
-    print("=== RAW BYTES ===")
-    print(raw)
-
     content_type = request.headers.get("content-type", "")
-    print("Content-Type:", content_type)
+    payload = extract_webhook_payload(raw=raw, content_type=content_type)
+    if payload is None:
+        return {"ok": False, "detail": "Could not parse webhook JSON payload"}
 
-    # Extract boundary
-    match = re.search(r"boundary=(.+)", content_type)
-    if not match:
-        print("No boundary found")
-        return {"ok": False}
+    listeners = await ws_manager.connection_count()
+    await ws_manager.broadcast_json(payload)
 
-    boundary = match.group(1).encode()
-    parts = raw.split(b"--" + boundary)
-
-    for part in parts:
-        if b"AccessControllerEvent" in part:
-            # Split headers and body
-            _, body = part.split(b"\r\n\r\n", 1)
-            body = body.strip(b"\r\n--")
-
-            try:
-                decoded = json.loads(body.decode("utf-8"))
-                print("=== DECODED JSON ===")
-                print(json.dumps(decoded, indent=2))
-            except Exception as e:
-                print("JSON decode failed:", e)
-                print(body)
-
-    return {"ok": True}
+    return {"ok": True, "broadcast_listeners": listeners}

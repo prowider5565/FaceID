@@ -22,6 +22,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 from config.database import Base
 from users.models import User  # noqa: F401
+from ws.models import Notification  # noqa: F401
 
 target_metadata = Base.metadata
 
