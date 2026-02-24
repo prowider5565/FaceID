@@ -9,7 +9,7 @@ from sqlalchemy import (
     Enum,
 )
 
-from backend.users.types import Role, Shift
+from users.types import Role, Shift
 from config.database import Base
 
 
