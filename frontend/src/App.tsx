@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import './App.css'
 import Dashboard from './pages/Dashboard'
+import Cameras from './pages/Cameras'
 import Employees from './pages/Employees'
 
 type Shift = 'Day' | 'Night'
@@ -29,7 +30,19 @@ type SystemMetric = {
   count: number
 }
 
-type PageKey = 'dashboard' | 'employees'
+type CameraStatus = 'Online' | 'Offline'
+type CameraPosition = 'CheckIn' | 'CheckOut'
+
+type Camera = {
+  id: number
+  deviceName: string
+  position: CameraPosition
+  status: CameraStatus
+  createdAt: string
+  updatedAt: string
+}
+
+type PageKey = 'dashboard' | 'employees' | 'cameras'
 
 type NavItem = {
   key: PageKey
@@ -39,6 +52,7 @@ type NavItem = {
 const navigationItems: NavItem[] = [
   { key: 'dashboard', label: 'Overview' },
   { key: 'employees', label: 'Employees' },
+  { key: 'cameras', label: 'Cameras' },
 ]
 
 const attendanceStatuses: AttendanceStatus[] = [
@@ -129,9 +143,59 @@ function App() {
   ]
 
   const activeEmployees = employees.filter((employee) => employee.isActive)
+  const cameras: Camera[] = [
+    {
+      id: 3001,
+      deviceName: 'Gate A - North Entrance',
+      position: 'CheckIn',
+      status: 'Online',
+      createdAt: '2025-03-21T09:00:00',
+      updatedAt: '2026-02-24T08:50:00',
+    },
+    {
+      id: 3002,
+      deviceName: 'Gate B - South Entrance',
+      position: 'CheckIn',
+      status: 'Online',
+      createdAt: '2025-03-21T09:00:00',
+      updatedAt: '2026-02-24T08:47:00',
+    },
+    {
+      id: 3003,
+      deviceName: 'Warehouse Exit',
+      position: 'CheckOut',
+      status: 'Offline',
+      createdAt: '2025-04-02T13:20:00',
+      updatedAt: '2026-02-24T07:14:00',
+    },
+    {
+      id: 3004,
+      deviceName: 'Admin Floor Lobby',
+      position: 'CheckIn',
+      status: 'Online',
+      createdAt: '2025-05-06T11:40:00',
+      updatedAt: '2026-02-24T08:53:00',
+    },
+    {
+      id: 3005,
+      deviceName: 'Production Line Exit',
+      position: 'CheckOut',
+      status: 'Offline',
+      createdAt: '2025-06-14T10:05:00',
+      updatedAt: '2026-02-24T06:38:00',
+    },
+    {
+      id: 3006,
+      deviceName: 'Visitor Reception',
+      position: 'CheckIn',
+      status: 'Online',
+      createdAt: '2025-08-09T14:12:00',
+      updatedAt: '2026-02-24T08:58:00',
+    },
+  ]
 
   const systemMetrics: SystemMetric[] = [
-    { label: 'Cameras', count: 14 },
+    { label: 'Cameras', count: cameras.length },
     { label: 'Employees', count: activeEmployees.length },
     { label: 'Admins', count: 2 },
     { label: 'Managers', count: 1 },
@@ -178,8 +242,10 @@ function App() {
             metrics={systemMetrics}
             attendanceStatuses={attendanceStatuses}
           />
-        ) : (
+        ) : activePage === 'employees' ? (
           <Employees employees={employees} />
+        ) : (
+          <Cameras cameras={cameras} />
         )}
       </main>
     </div>
