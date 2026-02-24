@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 type Shift = 'Day' | 'Night'
 
@@ -28,6 +28,8 @@ const tabs: { id: EmployeeTab; label: string }[] = [
 
 function Employees({ employees }: EmployeesProps) {
   const [activeTab, setActiveTab] = useState<EmployeeTab>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 5
 
   const filteredEmployees = useMemo(() => {
     if (activeTab === 'day') return employees.filter((employee) => employee.shift === 'Day' && employee.isActive)
@@ -36,6 +38,20 @@ function Employees({ employees }: EmployeesProps) {
     if (activeTab === 'inactive') return employees.filter((employee) => !employee.isActive)
     return employees
   }, [activeTab, employees])
+
+  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / pageSize))
+  const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeTab])
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
 
   return (
     <section className="employees-page">
@@ -80,7 +96,7 @@ function Employees({ employees }: EmployeesProps) {
               </tr>
             </thead>
             <tbody>
-              {filteredEmployees.map((employee) => (
+              {paginatedEmployees.map((employee) => (
                 <tr key={employee.id}>
                   <td>{employee.id}</td>
                   <td>{employee.fullName}</td>
@@ -103,6 +119,41 @@ function Employees({ employees }: EmployeesProps) {
             </tbody>
           </table>
         </div>
+
+        <footer className="employees-pagination">
+          <p className="employees-pagination-copy">
+            Showing {(currentPage - 1) * pageSize + 1}-
+            {Math.min(currentPage * pageSize, filteredEmployees.length)} of {filteredEmployees.length}
+          </p>
+          <div className="employees-pagination-controls">
+            <button
+              type="button"
+              className="pagination-btn"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+            {pageNumbers.map((pageNumber) => (
+              <button
+                key={pageNumber}
+                type="button"
+                className={`pagination-btn${currentPage === pageNumber ? ' pagination-btn-active' : ''}`}
+                onClick={() => setCurrentPage(pageNumber)}
+              >
+                {pageNumber}
+              </button>
+            ))}
+            <button
+              type="button"
+              className="pagination-btn"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        </footer>
       </div>
     </section>
   )
