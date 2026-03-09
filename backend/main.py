@@ -82,7 +82,9 @@ def _resolve_user_from_payload(payload: dict) -> User | None:
 def check_camera(ip_addr: str) -> Camera | None:
     db = SessionLocal()
     try:
-        return db.execute(select(Camera).where(Camera.ip_address == ip_addr)).scalar_one_or_none()
+        return db.execute(
+            select(Camera).where(Camera.ip_address == ip_addr)
+        ).scalar_one_or_none()
     finally:
         db.close()
 

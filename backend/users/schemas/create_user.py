@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from users.types import Role, Shift
+from users.types import Gender, Role, Shift
 
 
 class CreateUserBody(BaseModel):
@@ -10,4 +10,5 @@ class CreateUserBody(BaseModel):
     position: str = Field(min_length=1, max_length=128)
     shift: Shift
     role: Role
+    gender: Gender
     is_active: bool = True

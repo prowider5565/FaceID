@@ -10,3 +10,9 @@ class Role(str, Enum):
 class Shift(str, Enum):
     DAY = "Day"
     NIGHT = "Night"
+
+
+class Gender(str, Enum):
+    male = "male"
+    female = "female"
+    unknown = "unknown"

@@ -51,6 +51,12 @@ class Settings:
         default_factory=lambda: _get_list("CORS_ALLOWED_ORIGINS")
     )
 
+    # Hikvision device settings
+    hikvision_host: str = _get_str("HIKVISION_HOST", "")
+    hikvision_username: str = _get_str("HIKVISION_USERNAME", "")
+    hikvision_password: str = _get_str("HIKVISION_PASSWORD", "")
+    hikvision_port: int = _get_int("HIKVISION_PORT", 80)
+
     sql_echo: bool = _get_bool("SQL_ECHO", False)
     sql_pool_size: int = _get_int("SQL_POOL_SIZE", 10)
     sql_max_overflow: int = _get_int("SQL_MAX_OVERFLOW", 20)

@@ -9,7 +9,7 @@ from sqlalchemy import (
     Enum,
 )
 
-from users.types import Role, Shift
+from users.types import Gender, Role, Shift
 from config.database import Base
 
 
@@ -20,6 +20,7 @@ class User(Base):
 
     full_name = Column(String(255), nullable=False)
     phone_number = Column(String(32), unique=True, nullable=False, index=True)
+    gender = Column(Enum(Gender), nullable=True, default=Gender.unknown)
 
     hourly_rate = Column(Numeric(10, 2), nullable=False)
     position = Column(String(128), nullable=False)
