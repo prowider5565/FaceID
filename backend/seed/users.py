@@ -1,9 +1,10 @@
 from factory import Faker, fuzzy
 from factory.alchemy import SQLAlchemyModelFactory
 
+from attendance.types import Shift
 from config.database import SessionLocal
 from users.models import User
-from users.types import Role, Shift
+from users.types import Role
 
 
 class UserFactory(SQLAlchemyModelFactory):

@@ -1,6 +1,9 @@
 from config.database import SessionLocal
 from seed.users import UserFactory
 
+import users.models
+import attendance.models
+
 
 def run_seed(count: int = 20) -> None:
     session = SessionLocal()

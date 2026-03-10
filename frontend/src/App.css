@@ -388,6 +388,101 @@ h1 {
   gap: 0.9rem;
 }
 
+.shift-indicator-container {
+  border-radius: 0.55rem;
+  border: 1px solid #dbe5f1;
+  background: rgba(255, 255, 255, 0.93);
+  padding: 0.85rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.shift-indicator-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.45rem;
+  background: #ffffff;
+  padding: 0.75rem 0.78rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.shift-indicator-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.shift-indicator-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.55rem;
+  display: grid;
+  place-items: center;
+}
+
+.shift-indicator-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.shift-indicator-night .shift-indicator-icon {
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+
+.shift-indicator-day .shift-indicator-icon {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+}
+
+.shift-indicator-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.shift-indicator-label {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 720;
+  color: #0f172a;
+}
+
+.shift-indicator-subtitle {
+  margin: 0;
+  font-size: 0.74rem;
+  color: #64748b;
+}
+
+.shift-indicator-details {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.shift-indicator-detail dt {
+  font-size: 0.7rem;
+  font-weight: 720;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.shift-indicator-detail dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
 .metric-summary {
   border-radius: 0.55rem;
   border: 1px solid #dbe5f1;
@@ -1067,6 +1162,10 @@ h1 {
   .checkin-summary,
   .insights-side {
     height: auto;
+  }
+
+  .shift-indicator-container {
+    grid-template-columns: 1fr;
   }
 
   .attendance-chart-row {

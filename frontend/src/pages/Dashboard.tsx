@@ -2,6 +2,7 @@ import AttendancePieCard from '../components/AttendancePieCard'
 import Button from '../components/Button'
 import CheckinTodayCard from '../components/CheckinTodayCard'
 import CountCards from '../components/CountCards'
+import ShiftIndicatorCard from '../components/ShiftIndicatorCard'
 
 type Shift = 'Day' | 'Night'
 
@@ -59,6 +60,8 @@ type DashboardProps = {
   events: CheckinEvent[]
   metrics: SystemMetric[]
   attendanceStatuses: AttendanceStatus[]
+  dayShift?: { start_time: string; end_time: string } | null
+  nightShift?: { start_time: string; end_time: string } | null
   notifications: DashboardNotification[]
   unreadNotifications: number
   isNotificationPanelOpen: boolean
@@ -109,6 +112,8 @@ function Dashboard({
   events,
   metrics,
   attendanceStatuses,
+  dayShift,
+  nightShift,
   notifications,
   unreadNotifications,
   isNotificationPanelOpen,
@@ -212,8 +217,12 @@ function Dashboard({
         <CheckinTodayCard events={events} />
 
         <div className="insights-side">
+          <div className="shift-indicator-container" aria-label="Configured shift times">
+            <ShiftIndicatorCard shift="Day" startTime={dayShift?.start_time ?? null} endTime={dayShift?.end_time ?? null} />
+            <ShiftIndicatorCard shift="Night" startTime={nightShift?.start_time ?? null} endTime={nightShift?.end_time ?? null} />
+          </div>
           <CountCards metrics={metrics} />
-          <AttendancePieCard statuses={attendanceStatuses} />
+          <AttendancePieCard statuses={attendanceStatuses} valueMode="percentage" />
         </div>
       </section>
     </>

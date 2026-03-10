@@ -6,22 +6,26 @@ type AttendanceStatus = {
 
 type AttendancePieCardProps = {
   statuses: AttendanceStatus[]
+  valueMode?: 'count' | 'percentage'
 }
 
-function AttendancePieCard({ statuses }: AttendancePieCardProps) {
+function AttendancePieCard({ statuses, valueMode = 'count' }: AttendancePieCardProps) {
   const totalEmployees = statuses.reduce((sum, item) => sum + item.count, 0)
   let cumulative = 0
 
-  const pieGradient = totalEmployees > 0
-    ? statuses
-    .map((item) => {
-      const start = (cumulative / totalEmployees) * 100
-      cumulative += item.count
-      const end = (cumulative / totalEmployees) * 100
-      return `${item.color} ${start}% ${end}%`
-    })
-    .join(', ')
-    : '#e2e8f0 0% 100%'
+  const pieGradient =
+    totalEmployees > 0
+      ? statuses
+          .map((item) => {
+            const start =
+              valueMode === 'percentage' ? cumulative : (cumulative / totalEmployees) * 100
+            cumulative += item.count
+            const end =
+              valueMode === 'percentage' ? cumulative : (cumulative / totalEmployees) * 100
+            return `${item.color} ${start}% ${end}%`
+          })
+          .join(', ')
+      : '#e2e8f0 0% 100%'
 
   return (
     <article className="attendance-summary" aria-label="Attendance status chart">
@@ -35,7 +39,12 @@ function AttendancePieCard({ statuses }: AttendancePieCardProps) {
         />
         <ul className="attendance-legend">
           {statuses.map((item) => {
-            const percentage = totalEmployees > 0 ? ((item.count / totalEmployees) * 100).toFixed(1) : '0.0'
+            const percentage =
+              valueMode === 'percentage'
+                ? item.count.toFixed(1)
+                : totalEmployees > 0
+                  ? ((item.count / totalEmployees) * 100).toFixed(1)
+                  : '0.0'
 
             return (
               <li key={item.status}>
@@ -44,7 +53,7 @@ function AttendancePieCard({ statuses }: AttendancePieCardProps) {
                   {item.status}
                 </span>
                 <span className="legend-value">
-                  {item.count} ({percentage}%)
+                  {valueMode === 'percentage' ? `${percentage}%` : `${item.count} (${percentage}%)`}
                 </span>
               </li>
             )

@@ -134,10 +134,26 @@ let sharedWebhookCloseTimer: number | undefined
 let sharedWebhookReconnectTimer: number | undefined
 let sharedWebhookShouldReconnect = true
 
+type ShiftDurationApi = {
+  id: number
+  shift: Shift
+  start_time: string
+  end_time: string
+}
+
+type AttendancePiePercentagesApi = {
+  day_off_percentage: number
+  present_percentage: number
+  absent_percentage: number
+  late_percentage: number
+}
+
 function App() {
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
   const [notifications, setNotifications] = useState<DashboardNotification[]>([])
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false)
+  const [currentShifts, setCurrentShifts] = useState<ShiftDurationApi[] | null>(null)
+  const [attendancePie, setAttendancePie] = useState<AttendancePiePercentagesApi | null>(null)
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
   const wsUrl =
     import.meta.env.VITE_WS_URL ??
@@ -151,6 +167,59 @@ function App() {
   useEffect(() => {
     notificationPanelOpenRef.current = isNotificationPanelOpen
   }, [isNotificationPanelOpen])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadShifts = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/attendance/current-shifts`)
+        if (!response.ok) return
+        const data = (await response.json()) as unknown
+        if (!Array.isArray(data)) return
+        if (cancelled) return
+        setCurrentShifts(data as ShiftDurationApi[])
+      } catch {
+        // Keep last known value if backend is unreachable.
+      }
+    }
+
+    loadShifts()
+    return () => {
+      cancelled = true
+    }
+  }, [apiBaseUrl])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadAttendancePie = async () => {
+      try {
+        const response = await fetch(`${apiBaseUrl}/attendance/pie-chart-percentages`)
+        if (!response.ok) return
+        const data = (await response.json()) as AttendancePiePercentagesApi
+        if (cancelled) return
+        setAttendancePie(data)
+      } catch {
+        // Keep last known value if backend is unreachable.
+      }
+    }
+
+    loadAttendancePie()
+    return () => {
+      cancelled = true
+    }
+  }, [apiBaseUrl])
+
+  const dayShift = useMemo(
+    () => currentShifts?.find((item) => item.shift === 'Day') ?? null,
+    [currentShifts],
+  )
+
+  const nightShift = useMemo(
+    () => currentShifts?.find((item) => item.shift === 'Night') ?? null,
+    [currentShifts],
+  )
 
   useEffect(() => {
     sharedWebhookSocketUsers += 1
@@ -455,10 +524,17 @@ function App() {
   ]
 
   const attendanceStatuses: AttendanceStatus[] = [
-    { status: 'Present', count: checkinsToday.length, color: '#22c55e' },
-    { status: 'Absent', count: 0, color: '#ef4444' },
-    { status: 'Late', count: 0, color: '#f59e0b' },
-    { status: 'Day off', count: 0, color: '#3b82f6' },
+    {
+      status: 'Present',
+      count: Math.max(
+        0,
+        (attendancePie?.present_percentage ?? 0) - (attendancePie?.late_percentage ?? 0),
+      ),
+      color: '#22c55e',
+    },
+    { status: 'Absent', count: attendancePie?.absent_percentage ?? 0, color: '#ef4444' },
+    { status: 'Late', count: attendancePie?.late_percentage ?? 0, color: '#f59e0b' },
+    { status: 'Day off', count: attendancePie?.day_off_percentage ?? 0, color: '#3b82f6' },
   ]
 
   return (
@@ -501,6 +577,8 @@ function App() {
             events={todayEvents}
             metrics={systemMetrics}
             attendanceStatuses={attendanceStatuses}
+            dayShift={dayShift}
+            nightShift={nightShift}
             notifications={notifications}
             unreadNotifications={unreadNotifications}
             isNotificationPanelOpen={isNotificationPanelOpen}
