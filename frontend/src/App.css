@@ -741,6 +741,12 @@ h1 {
   font-weight: 600;
 }
 
+.employee-field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .employee-edit-form input,
 .employee-edit-form select {
   border: 1px solid #cbd5e1;
@@ -758,10 +764,29 @@ h1 {
   box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.24);
 }
 
+.required-asterisk {
+  color: #dc2626;
+}
+
+.employee-checkbox-left {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.45rem;
+}
+
+.employee-checkbox-left input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}
+
 .employee-checkbox-row {
   grid-column: 1 / -1;
   flex-direction: row;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.45rem;
 }
 

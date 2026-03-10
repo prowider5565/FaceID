@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from datetime import datetime, time, timezone
 from pathlib import Path
 import subprocess
 import sys
@@ -6,16 +7,18 @@ import sys
 from fastapi import FastAPI, Request
 from fastapi_pagination import add_pagination
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
+from sqlalchemy import and_, select
+from sqlalchemy import desc
 
+from attendance.models import Attendance
 from cameras import router as cameras_router
 from cameras.models import Camera
 from config.database import SessionLocal
 from config.settings import settings
 from users import router as users_router
 from users.models import User
+from ws.manager import ws_manager
 from users.schemas import GetUser
-from ws import extract_webhook_payload, router as websockets_router, ws_manager
 from ws.schema import (
     AttendanceEventDataSchema,
     CameraEnrollmentDataSchema,
@@ -23,6 +26,9 @@ from ws.schema import (
     WebhookCameraEnrollmentResponseSchema,
 )
 from ws.types import DirectionType, EventType
+from ws.routes import router as ws_router
+from webhooks.handlers import  webhook_router
+from attendance.handlers import attendance_router
 
 
 @asynccontextmanager
@@ -48,82 +54,7 @@ app.add_middleware(
 )
 app.include_router(cameras_router)
 app.include_router(users_router)
-app.include_router(websockets_router)
+app.include_router(ws_router)
+app.include_router(webhook_router)
+app.include_router(attendance_router)
 add_pagination(app)
-
-
-def _resolve_user_from_payload(payload: dict) -> User | None:
-    event = payload.get("AccessControllerEvent") if isinstance(payload, dict) else None
-    employee_no = event.get("employeeNoString") if isinstance(event, dict) else None
-    event_name = event.get("name") if isinstance(event, dict) else None
-
-    db = SessionLocal()
-    try:
-        user = None
-        if employee_no:
-            try:
-                user_id = int(str(employee_no).strip())
-                user = db.get(User, user_id)
-            except ValueError:
-                user = db.execute(
-                    select(User).where(User.phone_number == str(employee_no).strip())
-                ).scalar_one_or_none()
-
-        if user is None and event_name:
-            user = db.execute(
-                select(User).where(User.full_name == str(event_name).strip())
-            ).scalar_one_or_none()
-
-        return user
-    finally:
-        db.close()
-
-
-def check_camera(ip_addr: str) -> Camera | None:
-    db = SessionLocal()
-    try:
-        return db.execute(
-            select(Camera).where(Camera.ip_address == ip_addr)
-        ).scalar_one_or_none()
-    finally:
-        db.close()
-
-
-@app.post("/webhook")
-async def webhook(request: Request):
-    raw = await request.body()
-    content_type = request.headers.get("content-type", "")
-    payload = extract_webhook_payload(raw=raw, content_type=content_type)
-    if payload is None:
-        return {"ok": False, "detail": "Could not parse webhook JSON payload"}
-
-    payload_dict = payload if isinstance(payload, dict) else {}
-
-    ip_address = str(payload_dict.get("ipAddress") or "").strip()
-    access_event = payload_dict.get("AccessControllerEvent")
-    device_name = "Unknown Device"
-    if isinstance(access_event, dict):
-        device_name = str(access_event.get("deviceName") or device_name)
-
-    if ip_address and check_camera(ip_address) is None:
-        camera_enrollment_payload = WebhookCameraEnrollmentResponseSchema(
-            event_type=EventType.CAMERA_ENROLLMENT,
-            data=CameraEnrollmentDataSchema(
-                ip_address=ip_address,
-                device_name=device_name,
-            ),
-        ).model_dump(mode="json")
-        await ws_manager.broadcast_json(camera_enrollment_payload)
-
-    user = _resolve_user_from_payload(payload_dict)
-    attendance_payload = WebhookAttendanceResponseSchema(
-        event_type=EventType.ATTENDANCE,
-        data=AttendanceEventDataSchema(
-            user=GetUser.model_validate(user) if user is not None else None,
-            attendance_date=payload_dict.get("dateTime"),
-            direction=DirectionType.CHECK_IN,
-        ),
-    ).model_dump(mode="json")
-
-    await ws_manager.broadcast_json(attendance_payload)
-    return attendance_payload

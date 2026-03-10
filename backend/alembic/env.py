@@ -24,6 +24,7 @@ from config.database import Base
 from cameras.models import Camera  # noqa: F401
 from users.models import User  # noqa: F401
 from ws.models import Notification  # noqa: F401
+from attendance.models import Attendance  # noqa: F401
 
 target_metadata = Base.metadata
 

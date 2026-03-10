@@ -1,7 +1,8 @@
 from datetime import datetime
 
 from common.pydantic_basemodel import BaseModel
-from users.types import Role, Shift
+from users.types import Role
+from attendance.types import Shift
 
 
 class GetUser(BaseModel):

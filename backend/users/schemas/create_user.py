@@ -1,14 +1,17 @@
-from pydantic import BaseModel, Field
+from typing import Optional
+from pydantic import BaseModel
 
-from users.types import Gender, Role, Shift
+from users.types import Gender, Role
+from attendance.types import Shift
 
 
 class CreateUserBody(BaseModel):
-    full_name: str = Field(min_length=1, max_length=255)
-    phone_number: str = Field(min_length=1, max_length=32)
-    hourly_rate: float = Field(gt=0)
-    position: str = Field(min_length=1, max_length=128)
+    full_name: str
+    phone_number: str
+    hourly_rate: float
     shift: Shift
     role: Role
     gender: Gender
-    is_active: bool = True
+
+    position: Optional[str] = None
+    is_active: Optional[bool] = True

@@ -9,8 +9,10 @@ from sqlalchemy import (
     Enum,
 )
 
-from users.types import Gender, Role, Shift
+from users.types import Gender, Role
+from attendance.types import Shift
 from config.database import Base
+from sqlalchemy.orm import relationship
 
 
 class User(Base):
@@ -36,3 +38,5 @@ class User(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+    attendance = relationship("Attendance", back_populates="user")

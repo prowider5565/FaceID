@@ -22,7 +22,7 @@ def create_user(db: Session, payload: CreateUserBody) -> User:
         full_name=payload.full_name.strip(),
         phone_number=payload.phone_number.strip(),
         hourly_rate=payload.hourly_rate,
-        position=payload.position.strip(),
+        position=(payload.position or "").strip(),
         shift=payload.shift,
         role=payload.role,
         is_active=payload.is_active,

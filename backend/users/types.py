@@ -7,11 +7,6 @@ class Role(str, Enum):
     MANAGER = "Manager"
 
 
-class Shift(str, Enum):
-    DAY = "Day"
-    NIGHT = "Night"
-
-
 class Gender(str, Enum):
     male = "male"
     female = "female"

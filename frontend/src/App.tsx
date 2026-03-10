@@ -19,6 +19,17 @@ type Employee = {
   createdAt: string
   updatedAt: string
   checkInAt: string | null
+  direction: string | null
+}
+
+type CheckinEvent = {
+  eventId: number
+  userId: number
+  fullName: string
+  position: string
+  shift: Shift
+  checkInAt: string | null
+  direction: string | null
 }
 
 type AttendanceStatus = {
@@ -107,26 +118,34 @@ const isAttendanceNotificationPayload = (payload: unknown): payload is Attendanc
   )
 }
 
-const isCameraEnrollmentNotificationPayload = (
-  payload: unknown,
-): payload is CameraEnrollmentNotificationPayload => {
-  if (!payload || typeof payload !== 'object') return false
-  const candidate = payload as Record<string, unknown>
-  const data = candidate.data as Record<string, unknown> | undefined
+const isCameraEnrollmentNotificationPayload = (data: unknown): data is CameraEnrollmentNotificationPayload => {
   return (
-    candidate.event_type === 'CameraEnrollment' &&
-    !!data &&
-    typeof data.ip_address === 'string' &&
-    typeof data.device_name === 'string'
+    typeof data === 'object' &&
+    data !== null &&
+    typeof (data as { ip_address?: unknown }).ip_address === 'string' &&
+    typeof (data as { device_name?: unknown }).device_name === 'string'
   )
 }
+
+let sharedWebhookSocket: WebSocket | null = null
+let sharedWebhookSocketUrl: string | null = null
+let sharedWebhookSocketUsers = 0
+let sharedWebhookCloseTimer: number | undefined
+let sharedWebhookReconnectTimer: number | undefined
+let sharedWebhookShouldReconnect = true
 
 function App() {
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
   const [notifications, setNotifications] = useState<DashboardNotification[]>([])
   const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false)
-  const wsUrl = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8000/ws/webhook-events'
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+  const wsUrl =
+    import.meta.env.VITE_WS_URL ??
+    (() => {
+      const api = new URL(apiBaseUrl)
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      return `${wsProtocol}//${api.host}/ws/webhook-events`
+    })()
   const notificationPanelOpenRef = useRef(isNotificationPanelOpen)
 
   useEffect(() => {
@@ -134,14 +153,42 @@ function App() {
   }, [isNotificationPanelOpen])
 
   useEffect(() => {
-    let socket: WebSocket | null = null
-    let reconnectTimer: number | undefined
-    let shouldReconnect = true
+    sharedWebhookSocketUsers += 1
+    sharedWebhookShouldReconnect = true
+
+    if (sharedWebhookCloseTimer) {
+      window.clearTimeout(sharedWebhookCloseTimer)
+      sharedWebhookCloseTimer = undefined
+    }
+
+    const scheduleReconnect = () => {
+      if (!sharedWebhookShouldReconnect || sharedWebhookSocketUsers <= 0) return
+      if (sharedWebhookReconnectTimer) return
+      sharedWebhookReconnectTimer = window.setTimeout(() => {
+        sharedWebhookReconnectTimer = undefined
+        connect()
+      }, 1500)
+    }
 
     const connect = () => {
-      socket = new WebSocket(wsUrl)
+      if (sharedWebhookSocket && sharedWebhookSocketUrl === wsUrl) {
+        if (sharedWebhookSocket.readyState === WebSocket.OPEN || sharedWebhookSocket.readyState === WebSocket.CONNECTING) {
+          return
+        }
+      }
 
-      socket.onmessage = (event) => {
+      if (sharedWebhookSocket) {
+        try {
+          sharedWebhookSocket.close()
+        } catch {
+          // Ignore.
+        }
+      }
+
+      sharedWebhookSocketUrl = wsUrl
+      sharedWebhookSocket = new WebSocket(wsUrl)
+
+      sharedWebhookSocket.onmessage = (event) => {
         let payload: unknown = event.data
         try {
           payload = JSON.parse(event.data)
@@ -161,21 +208,34 @@ function App() {
         ])
       }
 
-      socket.onclose = () => {
-        if (shouldReconnect) {
-          reconnectTimer = window.setTimeout(connect, 1500)
-        }
+      sharedWebhookSocket.onclose = () => {
+        scheduleReconnect()
       }
     }
 
     connect()
 
     return () => {
-      shouldReconnect = false
-      if (reconnectTimer) {
-        window.clearTimeout(reconnectTimer)
+      sharedWebhookSocketUsers = Math.max(0, sharedWebhookSocketUsers - 1)
+      if (sharedWebhookSocketUsers > 0) return
+
+      sharedWebhookShouldReconnect = false
+      if (sharedWebhookReconnectTimer) {
+        window.clearTimeout(sharedWebhookReconnectTimer)
+        sharedWebhookReconnectTimer = undefined
       }
-      socket?.close()
+
+      sharedWebhookCloseTimer = window.setTimeout(() => {
+        sharedWebhookCloseTimer = undefined
+        if (sharedWebhookSocketUsers > 0) return
+        try {
+          sharedWebhookSocket?.close()
+        } catch {
+          // Ignore.
+        }
+        sharedWebhookSocket = null
+        sharedWebhookSocketUrl = null
+      }, 500)
     }
   }, [wsUrl])
 
@@ -249,7 +309,6 @@ function App() {
     for (const notification of notifications) {
       if (!isAttendanceNotificationPayload(notification.payload)) continue
       if (notification.payload.event_type !== 'Attendance') continue
-      if (notification.payload.data.direction !== 'CheckIn') continue
       if (!notification.payload.data.user) continue
 
       const attendanceDate = notification.payload.data.attendance_date
@@ -275,6 +334,7 @@ function App() {
         createdAt: '',
         updatedAt: '',
         checkInAt: attendanceDate,
+        direction: notification.payload.data.direction,
       }
 
       const existing = byUser.get(user.id)
@@ -290,6 +350,46 @@ function App() {
     }
 
     return Array.from(byUser.values()).sort((a, b) => {
+      const aTime = a.checkInAt ? new Date(a.checkInAt).getTime() : 0
+      const bTime = b.checkInAt ? new Date(b.checkInAt).getTime() : 0
+      return bTime - aTime
+    })
+  }, [notifications])
+
+  const todayEvents = useMemo(() => {
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const endOfToday = new Date(startOfToday)
+    endOfToday.setDate(endOfToday.getDate() + 1)
+
+    const events: CheckinEvent[] = []
+
+    for (const notification of notifications) {
+      if (!isAttendanceNotificationPayload(notification.payload)) continue
+      if (notification.payload.event_type !== 'Attendance') continue
+      if (!notification.payload.data.user) continue
+
+      const attendanceDate = notification.payload.data.attendance_date
+      if (!attendanceDate) continue
+      const attendance = new Date(attendanceDate)
+      if (Number.isNaN(attendance.getTime())) continue
+      if (attendance < startOfToday || attendance >= endOfToday) continue
+
+      const user = notification.payload.data.user
+      const normalizedShift: Shift = user.shift === 'Night' ? 'Night' : 'Day'
+
+      events.push({
+        eventId: notification.id,
+        userId: user.id,
+        fullName: user.full_name,
+        position: user.position,
+        shift: normalizedShift,
+        checkInAt: attendanceDate,
+        direction: notification.payload.data.direction,
+      })
+    }
+
+    return events.sort((a, b) => {
       const aTime = a.checkInAt ? new Date(a.checkInAt).getTime() : 0
       const bTime = b.checkInAt ? new Date(b.checkInAt).getTime() : 0
       return bTime - aTime
@@ -398,7 +498,7 @@ function App() {
       <main className="content">
         {activePage === 'dashboard' ? (
           <Dashboard
-            employees={checkinsToday}
+            events={todayEvents}
             metrics={systemMetrics}
             attendanceStatuses={attendanceStatuses}
             notifications={notifications}

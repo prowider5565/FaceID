@@ -5,12 +5,14 @@ import CountCards from '../components/CountCards'
 
 type Shift = 'Day' | 'Night'
 
-type Employee = {
-  id: number
+type CheckinEvent = {
+  eventId: number
+  userId: number
   fullName: string
   position: string
   shift: Shift
   checkInAt: string | null
+  direction: string | null
 }
 
 type AttendanceStatus = {
@@ -54,7 +56,7 @@ type CameraEnrollmentNotificationPayload = {
 }
 
 type DashboardProps = {
-  employees: Employee[]
+  events: CheckinEvent[]
   metrics: SystemMetric[]
   attendanceStatuses: AttendanceStatus[]
   notifications: DashboardNotification[]
@@ -104,7 +106,7 @@ const formatCameraEnrollmentMessage = (payload: CameraEnrollmentNotificationPayl
 }
 
 function Dashboard({
-  employees,
+  events,
   metrics,
   attendanceStatuses,
   notifications,
@@ -207,7 +209,7 @@ function Dashboard({
       </div>
 
       <section className="insights-row" aria-label="Today attendance insights">
-        <CheckinTodayCard employees={employees} />
+        <CheckinTodayCard events={events} />
 
         <div className="insights-side">
           <CountCards metrics={metrics} />

@@ -4,6 +4,7 @@ import SearchBar from '../components/SearchBar'
 
 type Shift = 'Day' | 'Night'
 type EmployeeRole = 'Manager' | 'Admin' | 'Employee'
+type Gender = 'male' | 'female' | 'unknown'
 
 type Employee = {
   id: number
@@ -36,6 +37,17 @@ type EditEmployeeForm = {
   isActive: boolean
 }
 
+type CreateEmployeeForm = {
+  fullName: string
+  phoneNumber: string
+  hourlyRate: number
+  role: EmployeeRole
+  position?: string
+  shift: Shift
+  isActive?: boolean
+  gender: Gender
+}
+
 const uzbekistanPhoneRegex = /^(?:\+?998)(?:[\s-]?\d{2})(?:[\s-]?\d{3})(?:[\s-]?\d{2})(?:[\s-]?\d{2})$/
 const russianPhoneRegex = /^(?:\+7|8)(?:[\s-]?\(?\d{3}\)?)(?:[\s-]?\d{3})(?:[\s-]?\d{2})(?:[\s-]?\d{2})$/
 
@@ -61,6 +73,17 @@ type ApiPage<T> = {
 }
 
 type UserMutationPayload = {
+  full_name: string
+  phone_number: string
+  hourly_rate: number
+  position?: string
+  shift: 'Day' | 'Night'
+  role: 'Manager' | 'Admin' | 'Employee'
+  is_active?: boolean
+  gender: Gender
+}
+
+type UserUpdatePayload = {
   full_name: string
   phone_number: string
   hourly_rate: number
@@ -112,7 +135,7 @@ function Employees() {
   const [reloadKey, setReloadKey] = useState(0)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [createError, setCreateError] = useState('')
-  const [newEmployeeForm, setNewEmployeeForm] = useState<EditEmployeeForm>({
+  const [newEmployeeForm, setNewEmployeeForm] = useState<CreateEmployeeForm>({
     fullName: '',
     phoneNumber: '',
     hourlyRate: 0,
@@ -120,6 +143,7 @@ function Employees() {
     position: '',
     shift: 'Day',
     isActive: true,
+    gender: 'unknown',
   })
   const [employeePendingDisable, setEmployeePendingDisable] = useState<Employee | null>(null)
   const [employeeEditing, setEmployeeEditing] = useState<Employee | null>(null)
@@ -221,7 +245,18 @@ function Employees() {
   const isPhoneValid = (phoneNumber: string) =>
     uzbekistanPhoneRegex.test(phoneNumber.trim()) || russianPhoneRegex.test(phoneNumber.trim())
 
-  const toUserMutationPayload = (form: EditEmployeeForm): UserMutationPayload => ({
+  const toUserMutationPayload = (form: CreateEmployeeForm): UserMutationPayload => ({
+    full_name: form.fullName.trim(),
+    phone_number: form.phoneNumber.trim(),
+    hourly_rate: form.hourlyRate,
+    position: (form.position ?? '').trim() || undefined,
+    shift: form.shift,
+    role: form.role,
+    is_active: form.isActive,
+    gender: form.gender,
+  })
+
+  const toUserUpdatePayload = (form: EditEmployeeForm): UserUpdatePayload => ({
     full_name: form.fullName.trim(),
     phone_number: form.phoneNumber.trim(),
     hourly_rate: form.hourlyRate,
@@ -234,8 +269,8 @@ function Employees() {
   const handleCreateEmployee = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (!newEmployeeForm.fullName.trim() || !newEmployeeForm.position.trim()) {
-      setCreateError('Full name and position are required.')
+    if (!newEmployeeForm.fullName.trim()) {
+      setCreateError('Full name is required.')
       return
     }
 
@@ -268,6 +303,7 @@ function Employees() {
         position: '',
         shift: 'Day',
         isActive: true,
+        gender: 'unknown',
       })
       setReloadKey((value) => value + 1)
     } catch {
@@ -299,7 +335,7 @@ function Employees() {
       const response = await fetch(`${API_BASE_URL}/users/${employeeEditing.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(toUserMutationPayload(editForm)),
+        body: JSON.stringify(toUserUpdatePayload(editForm)),
       })
       if (!response.ok) {
         throw new Error('Failed to update employee')
@@ -469,7 +505,9 @@ function Employees() {
             <h2>Add New Employee</h2>
             <form className="employee-edit-form" onSubmit={handleCreateEmployee}>
               <label>
-                Full Name
+                <span className="employee-field-label">
+                  Full Name <span className="required-asterisk">*</span>
+                </span>
                 <input
                   type="text"
                   value={newEmployeeForm.fullName}
@@ -479,7 +517,9 @@ function Employees() {
                 />
               </label>
               <label>
-                Phone Number
+                <span className="employee-field-label">
+                  Phone Number <span className="required-asterisk">*</span>
+                </span>
                 <input
                   type="text"
                   value={newEmployeeForm.phoneNumber}
@@ -489,7 +529,9 @@ function Employees() {
                 />
               </label>
               <label>
-                Hourly Rate
+                <span className="employee-field-label">
+                  Hourly Rate <span className="required-asterisk">*</span>
+                </span>
                 <input
                   type="number"
                   min="0"
@@ -501,7 +543,9 @@ function Employees() {
                 />
               </label>
               <label>
-                Role
+                <span className="employee-field-label">
+                  Role <span className="required-asterisk">*</span>
+                </span>
                 <select
                   value={newEmployeeForm.role}
                   onChange={(event) =>
@@ -524,7 +568,9 @@ function Employees() {
                 />
               </label>
               <label>
-                Shift
+                <span className="employee-field-label">
+                  Shift <span className="required-asterisk">*</span>
+                </span>
                 <select
                   value={newEmployeeForm.shift}
                   onChange={(event) =>
@@ -535,15 +581,30 @@ function Employees() {
                   <option value="Night">Night</option>
                 </select>
               </label>
-              <label className="employee-checkbox-row">
+              <label className="employee-checkbox-left">
                 <input
                   type="checkbox"
-                  checked={newEmployeeForm.isActive}
+                  checked={Boolean(newEmployeeForm.isActive)}
                   onChange={(event) =>
                     setNewEmployeeForm((form) => ({ ...form, isActive: event.target.checked }))
                   }
                 />
                 Active
+              </label>
+              <label>
+                <span className="employee-field-label">
+                  Gender <span className="required-asterisk">*</span>
+                </span>
+                <select
+                  value={newEmployeeForm.gender}
+                  onChange={(event) =>
+                    setNewEmployeeForm((form) => ({ ...form, gender: event.target.value as Gender }))
+                  }
+                >
+                  <option value="unknown">Unknown</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
               </label>
               {createError ? <p className="employee-form-error">{createError}</p> : null}
 

@@ -1,38 +1,41 @@
 type Shift = 'Day' | 'Night'
 
-type CheckinEmployee = {
-  id: number
+type CheckinEvent = {
+  eventId: number
+  userId: number
   fullName: string
   position: string
   shift: Shift
   checkInAt: string | null
+  direction: string | null
 }
 
 type CheckinTodayCardProps = {
-  employees: CheckinEmployee[]
+  events: CheckinEvent[]
 }
 
-function CheckinTodayCard({ employees }: CheckinTodayCardProps) {
+function CheckinTodayCard({ events }: CheckinTodayCardProps) {
   return (
     <article className="checkin-summary">
       <h2>Today&apos;s Check-in Status (real-time)</h2>
 
       <div className="employee-checkin-cards">
-        {employees.map((employee) => (
-          <article key={employee.id} className="employee-checkin-card">
+        {events.map((event) => (
+          <article key={event.eventId} className="employee-checkin-card">
             <div>
-              <p className="employee-name">{employee.fullName}</p>
+              <p className="employee-name">{event.fullName}</p>
               <p className="employee-meta">
-                {employee.position} • {employee.shift} Shift
+                {event.position} • {event.shift} Shift
               </p>
             </div>
             <p className="employee-checkin-time">
-              {employee.checkInAt
-                ? new Date(employee.checkInAt).toLocaleTimeString('en-US', {
+              {event.checkInAt
+                ? new Date(event.checkInAt).toLocaleTimeString('en-US', {
                     hour: '2-digit',
                     minute: '2-digit',
                   })
                 : 'Not checked in yet'}
+              {event.direction ? ` • ${event.direction}` : ''}
             </p>
           </article>
         ))}
