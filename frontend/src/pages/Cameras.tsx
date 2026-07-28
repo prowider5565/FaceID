@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import Button from '../components/Button'
+import PageNavbar from '../components/PageNavbar'
 
 type CameraStatus = 'Online' | 'Offline'
 type CameraPosition = 'CheckIn' | 'CheckOut'
@@ -15,6 +16,12 @@ type Camera = {
 
 type CamerasProps = {
   cameras: Camera[]
+  notifications: { id: number; payload: unknown; receivedAt: string; isRead: boolean; cameraEnrollmentState?: 'pending' | 'loading' | 'done' | 'error' }[]
+  unreadNotifications: number
+  isNotificationPanelOpen: boolean
+  onToggleNotifications: () => void
+  onCloseNotifications?: () => void
+  onRegisterCamera: (notificationId: number) => void
 }
 
 type NewCameraForm = {
@@ -22,7 +29,15 @@ type NewCameraForm = {
   position: CameraPosition
 }
 
-function Cameras({ cameras }: CamerasProps) {
+function Cameras({
+  cameras,
+  notifications,
+  unreadNotifications,
+  isNotificationPanelOpen,
+  onToggleNotifications,
+  onCloseNotifications,
+  onRegisterCamera,
+}: CamerasProps) {
   const [cameraRows, setCameraRows] = useState<Camera[]>(cameras)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [createError, setCreateError] = useState('')
@@ -66,9 +81,17 @@ function Cameras({ cameras }: CamerasProps) {
 
   return (
     <section className="cameras-page">
+      <PageNavbar
+        title="Cameras"
+        notifications={notifications}
+        unreadNotifications={unreadNotifications}
+        isNotificationPanelOpen={isNotificationPanelOpen}
+        onToggleNotifications={onToggleNotifications}
+        onCloseNotifications={onCloseNotifications}
+        onRegisterCamera={onRegisterCamera}
+      />
       <header className="cameras-header">
         <div>
-          <h1>Cameras</h1>
           <p>Monitor camera endpoints and manage their assignment and status.</p>
         </div>
         <Button type="button" variant="primary" onClick={() => setIsCreateModalOpen(true)}>

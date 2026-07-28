@@ -327,6 +327,10 @@ function App() {
     })
   }
 
+  const handleCloseNotifications = () => {
+    setIsNotificationPanelOpen(false)
+  }
+
   const handleRegisterCamera = async (notificationId: number) => {
     const notification = notifications.find((item) => item.id === notificationId)
     if (!notification || !isCameraEnrollmentNotificationPayload(notification.payload)) return
@@ -583,12 +587,28 @@ function App() {
             unreadNotifications={unreadNotifications}
             isNotificationPanelOpen={isNotificationPanelOpen}
             onToggleNotifications={handleToggleNotifications}
+            onCloseNotifications={handleCloseNotifications}
             onRegisterCamera={handleRegisterCamera}
           />
         ) : activePage === 'employees' ? (
-          <Employees />
+          <Employees
+            notifications={notifications}
+            unreadNotifications={unreadNotifications}
+            isNotificationPanelOpen={isNotificationPanelOpen}
+            onToggleNotifications={handleToggleNotifications}
+            onCloseNotifications={handleCloseNotifications}
+            onRegisterCamera={handleRegisterCamera}
+          />
         ) : (
-          <Cameras cameras={cameras} />
+          <Cameras
+            cameras={cameras}
+            notifications={notifications}
+            unreadNotifications={unreadNotifications}
+            isNotificationPanelOpen={isNotificationPanelOpen}
+            onToggleNotifications={handleToggleNotifications}
+            onCloseNotifications={handleCloseNotifications}
+            onRegisterCamera={handleRegisterCamera}
+          />
         )}
       </main>
     </div>

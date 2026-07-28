@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import Button from '../components/Button'
+import PageNavbar from '../components/PageNavbar'
 import SearchBar from '../components/SearchBar'
 
 type Shift = 'Day' | 'Night'
@@ -122,7 +123,23 @@ const tabToRole: Record<EmployeeTab, EmployeeRole> = {
   admins: 'Admin',
 }
 
-function Employees() {
+type EmployeesProps = {
+  notifications: { id: number; payload: unknown; receivedAt: string; isRead: boolean; cameraEnrollmentState?: 'pending' | 'loading' | 'done' | 'error' }[]
+  unreadNotifications: number
+  isNotificationPanelOpen: boolean
+  onToggleNotifications: () => void
+  onCloseNotifications?: () => void
+  onRegisterCamera: (notificationId: number) => void
+}
+
+function Employees({
+  notifications,
+  unreadNotifications,
+  isNotificationPanelOpen,
+  onToggleNotifications,
+  onCloseNotifications,
+  onRegisterCamera,
+}: EmployeesProps) {
   const [activeTab, setActiveTab] = useState<EmployeeTab>('employees')
   const [currentPage, setCurrentPage] = useState(1)
   const [employeeRows, setEmployeeRows] = useState<Employee[]>([])
@@ -369,9 +386,17 @@ function Employees() {
 
   return (
     <section className="employees-page">
+      <PageNavbar
+        title="Employees"
+        notifications={notifications}
+        unreadNotifications={unreadNotifications}
+        isNotificationPanelOpen={isNotificationPanelOpen}
+        onToggleNotifications={onToggleNotifications}
+        onCloseNotifications={onCloseNotifications}
+        onRegisterCamera={onRegisterCamera}
+      />
       <div className="employees-toolbar">
         <div>
-          <h1>Employees</h1>
           <p>Manage employee records, shifts, and roster activity.</p>
         </div>
         <Button type="button" variant="primary" onClick={() => setIsCreateModalOpen(true)}>
